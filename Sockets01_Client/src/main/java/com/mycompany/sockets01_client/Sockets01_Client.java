@@ -4,14 +4,15 @@
 
 package com.mycompany.sockets01_client;
 
-/**
- *
- * @author Pedro
- */
 public class Sockets01_Client {
 
     public static void main(String[] args) {
-        ClientTCP cliente = new ClientTCP();
-        cliente.Execute();
+
+        ClientTCP cliente1 = new ClientTCP();
+        cliente1.Execute();
+        /*
+        ClientTCP cliente2 =, new ClientTCP();
+        cliente2.Execute();
+        */
     }
 }
