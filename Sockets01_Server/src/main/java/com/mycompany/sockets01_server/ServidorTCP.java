@@ -45,7 +45,7 @@ public class ServidorTCP {
                 
                 // Espera resposta do cliente
                 String resposta = reader.readUTF();
-                mensagens.add("Cliente " + i + ": " + resposta);
+                mensagens.add("Cliente " + i + " (" + client.getInetAddress().getHostAddress() + ")" + ": " + resposta);
                 
                 JOptionPane.showMessageDialog(null,"Resposta do cliente " + i + ": " + resposta);
             
