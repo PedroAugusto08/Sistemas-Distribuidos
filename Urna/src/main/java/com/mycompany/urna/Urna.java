@@ -58,6 +58,7 @@ public class Urna {
             
             b = new byte[256];
             pckt = new DatagramPacket(b, b.length);
+            
             ms.receive(pckt);
             
             JOptionPane.showMessageDialog(null, new String(pckt.getData(), 0, pckt.getLength()));

@@ -10,6 +10,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Locale;
 import javax.swing.JOptionPane;
 
 /**
@@ -25,10 +26,15 @@ public class Central {
             int candidato1 = 0;
             int candidato2 = 0;
             int candidato3 = 0;
+            int candidato4 = 0;
+            int branco = 0;
+            int nulo = 0;
+            
+            int totalVotos = 1;
             
             System.out.println("Central aguardando votos...");
             
-            for(int i = 0; i < 3; i++){
+            for(int i = 0; i < totalVotos; i++){
                 Socket s = ss.accept();
                 ObjectInputStream in = new ObjectInputStream(s.getInputStream());
                 String voto = in.readUTF();
@@ -42,6 +48,15 @@ public class Central {
                 }
                 if (voto.equals("3")){
                     candidato3++;
+                }
+                if (voto.equals("4")){
+                    candidato4++;
+                }
+                if (voto.equals("5")){
+                    branco++;
+                }
+                if (voto.equals("6")){
+                    nulo++;
                 }
                 
                 InetAddress ipUrna = s.getInetAddress();
@@ -60,26 +75,34 @@ public class Central {
             
             ss.close();
             
-            double porcentagem1 = (candidato1 / 10.0) * 100;
-            double porcentagem2 = (candidato2 / 10.0) * 100;
-            double porcentagem3 = (candidato3 / 10.0) * 100;
+            double porcentagem1 = (candidato1 / (double) totalVotos) * 100;
+            double porcentagem2 = (candidato2 / (double) totalVotos) * 100;
+            double porcentagem3 = (candidato3 / (double) totalVotos) * 100;
+            double porcentagem4 = (candidato4 / (double) totalVotos) * 100;
+            double porcentagemBranco = (branco / (double) totalVotos) * 100;
+            double porcentagemNulo = (nulo / (double) totalVotos) * 100;
             
             String ganhador;
             
-            if (candidato1 > candidato2 && candidato1 > candidato3){
+            if (candidato1 > candidato2 && candidato1 > candidato3 && candidato1 > candidato4){
                 ganhador = "Candidato 1";
-            }else if (candidato2 > candidato1 && candidato2 > candidato3){
+            }else if (candidato2 > candidato1 && candidato2 > candidato3 && candidato2 > candidato4){
                 ganhador = "Candidato 2";
-            }else if (candidato3 > candidato2 && candidato3 > candidato3){
+            }else if (candidato3 > candidato1 && candidato3 > candidato2 && candidato3 > candidato4){
                 ganhador = "Candidato 3";
+            }else if (candidato4 > candidato1 && candidato4 > candidato2 && candidato4 > candidato3){
+                ganhador = "Candidato 4";
             }else {
                 ganhador = "Empate";
             }
           
             String resultado = "RESULTADO DA ELEIÇÃO\n\n"
-                    + "Candidato 1: " + candidato1 + " votos (" + String.format("%.1f", porcentagem1) + "%)\n"
-                    + "Candidato 2: " + candidato2 + " votos (" + String.format("%.1f", porcentagem2) + "%)\n"
-                    + "Candidato 3: " + candidato3 + " votos (" + String.format("%.1f", porcentagem3) + "%)\n\n"
+                    + "Candidato 1: " + candidato1 + " votos (" + String.format(Locale.US, "%.1f", porcentagem1) + "%)\n"
+                    + "Candidato 2: " + candidato2 + " votos (" + String.format(Locale.US, "%.1f", porcentagem2) + "%)\n"
+                    + "Candidato 3: " + candidato3 + " votos (" + String.format(Locale.US, "%.1f", porcentagem3) + "%)\n"
+                    + "Candidato 4: " + candidato4 + " votos (" + String.format(Locale.US, "%.1f", porcentagem4) + "%)\n"
+                    + "Brancos: " + branco + " votos (" + String.format(Locale.US, "%.1f", porcentagemBranco) + "%)\n"
+                    + "Nulos: " + nulo + " votos (" + String.format(Locale.US, "%.1f", porcentagemNulo) + "%)\n\n"
                     + "Ganhador: " + ganhador;
             
             System.out.println(resultado);
