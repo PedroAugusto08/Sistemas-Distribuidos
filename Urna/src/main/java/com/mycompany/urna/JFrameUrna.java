@@ -7,10 +7,6 @@ package com.mycompany.urna;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.MulticastSocket;
-import java.net.NetworkInterface;
 import java.net.Socket;
 import javax.swing.JOptionPane;
 
@@ -27,6 +23,7 @@ public class JFrameUrna extends javax.swing.JFrame {
      */
     public JFrameUrna() {
         initComponents();
+        setLocationRelativeTo(null);
     }
 
     /**
@@ -164,75 +161,74 @@ public class JFrameUrna extends javax.swing.JFrame {
 
     private void btnVotarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnVotarActionPerformed
         String voto = "";
-        
+
         if (rbCandidato1.isSelected()) {
             voto = "1";
         }
+
         if (rbCandidato2.isSelected()) {
             voto = "2";
         }
+
         if (rbCandidato3.isSelected()) {
             voto = "3";
         }
+
         if (rbCandidato4.isSelected()) {
             voto = "4";
         }
+
         if (rbBranco.isSelected()) {
             voto = "5";
         }
+
         if (rbNulo.isSelected()) {
             voto = "6";
         }
-        if (voto.equals("")){
+
+        if (voto.equals("")) {
             JOptionPane.showMessageDialog(null, "Selecione uma opção.");
             return;
         }
+
         try {
+            DatagramSocket ds = new DatagramSocket(6667);
+
             Socket s = new Socket("127.0.0.1", 3322);
-            
+
             ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());
-            
+
             out.writeUTF(voto);
             out.flush();
-            
+
             out.close();
             s.close();
-            
-            DatagramSocket ds = new DatagramSocket(6667);
-            
+
             byte[] b = new byte[256];
             DatagramPacket pckt = new DatagramPacket(b, b.length);
-            
+
             ds.receive(pckt);
-            
-            String ipGrupo = new String(pckt.getData(), 0, pckt.getLength());
-            
+
+            String ipGrupo = new String(
+                    pckt.getData(),
+                    0,
+                    pckt.getLength()
+            );
+
             ds.close();
-            
-            InetAddress addr = InetAddress.getByName(ipGrupo);
-            InetSocketAddress group = new InetSocketAddress(addr, 6668);
-            
-            NetworkInterface netIf = NetworkInterface.getByName("Wi-Fi");
-            
-            MulticastSocket ms = new MulticastSocket(group.getPort());
-            ms.joinGroup(group, netIf);
-            
-            b = new byte[256];
-            pckt = new DatagramPacket(b, b.length);
-            
-            ms.receive(pckt);
-            
-            String resultado = new String(pckt.getData(), 0, pckt.getLength());
-            
-            ms.leaveGroup(group, netIf);
-            ms.close();
-            
+
             this.dispose();
-            
-            JFrameApuracao instancia = new JFrameApuracao(resultado);
+
+            JFrameApuracao instancia = new JFrameApuracao(ipGrupo);
             instancia.setVisible(true);
+
         } catch (Exception e) {
             e.printStackTrace();
+
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Erro na Urna: " + e.getMessage()
+            );
         }
     }//GEN-LAST:event_btnVotarActionPerformed
 

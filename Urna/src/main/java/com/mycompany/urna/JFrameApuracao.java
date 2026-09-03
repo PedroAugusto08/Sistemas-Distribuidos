@@ -4,26 +4,73 @@
  */
 package com.mycompany.urna;
 
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+
 /**
  *
  * @author Pedro
  */
 public class JFrameApuracao extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(JFrameApuracao.class.getName());
+    private static final java.util.logging.Logger logger =
+            java.util.logging.Logger.getLogger(JFrameApuracao.class.getName());
 
-    /**
-     * Creates new form JFrameApuracao
-     */
     public JFrameApuracao() {
         initComponents();
+        setLocationRelativeTo(null);
     }
     
-    public JFrameApuracao(String resultado){
+    public JFrameApuracao(String ipGrupo) {
         initComponents();
-        
-        String [] linhas = resultado.split("\n");
-        
+        setLocationRelativeTo(null);
+
+        new Thread(() -> {
+            aguardarResultado(ipGrupo);
+        }).start();
+    }
+    
+    private void aguardarResultado(String ipGrupo) {
+        try {
+            InetAddress addr = InetAddress.getByName(ipGrupo);
+            InetSocketAddress group = new InetSocketAddress(addr, 6668);
+
+            NetworkInterface netIf = NetworkInterface.getByName("Wi-Fi");
+
+            MulticastSocket ms = new MulticastSocket(null);
+
+            ms.setReuseAddress(true);
+            ms.bind(new InetSocketAddress(6668));
+
+            ms.joinGroup(group, netIf);
+
+            byte[] b = new byte[256];
+            DatagramPacket pckt = new DatagramPacket(b, b.length);
+
+            ms.receive(pckt);
+
+            String resultado = new String(
+                    pckt.getData(),
+                    0,
+                    pckt.getLength()
+            );
+
+            ms.leaveGroup(group, netIf);
+            ms.close();
+
+            mostrarResultado(resultado);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void mostrarResultado(String resultado) {
+        String[] linhas = resultado.split("\n");
+
         lblCandidato1.setText(linhas[2]);
         lblCandidato2.setText(linhas[3]);
         lblCandidato3.setText(linhas[4]);
@@ -32,6 +79,9 @@ public class JFrameApuracao extends javax.swing.JFrame {
         lblNulos.setText(linhas[7]);
         lblGanhador.setText(linhas[9]);
     }
+
+    // daqui continua initComponents()
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -60,23 +110,30 @@ public class JFrameApuracao extends javax.swing.JFrame {
         lblTitulo.setText("RESULTADO");
         lblTitulo.setAlignmentY(0.0F);
 
+        lblCandidato1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         lblCandidato1.setText("Candidato 1:");
 
+        lblCandidato2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         lblCandidato2.setText("Candidato 2:");
 
+        lblCandidato3.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         lblCandidato3.setText("Candidato 3:");
 
+        lblCandidato4.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         lblCandidato4.setText("Candidato 4:");
 
+        lblBrancos.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         lblBrancos.setText("Brancos:");
 
+        lblNulos.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         lblNulos.setText("Nulos:");
 
         btnFechar.setText("Fechar");
         btnFechar.addActionListener(this::btnFecharActionPerformed);
 
+        lblGanhador.setFont(new java.awt.Font("Segoe UI", 1, 16)); // NOI18N
         lblGanhador.setForeground(new java.awt.Color(51, 204, 0));
-        lblGanhador.setText("Ganhador:");
+        lblGanhador.setText("Aguardando apuração...");
 
         jSeparator1.setForeground(new java.awt.Color(0, 0, 0));
 
@@ -97,20 +154,19 @@ public class JFrameApuracao extends javax.swing.JFrame {
                             .addComponent(lblCandidato1)
                             .addComponent(lblCandidato4)))
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(144, 144, 144)
-                        .addComponent(btnFechar, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(156, 156, 156)
+                        .addComponent(lblTitulo))
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(129, 129, 129)
+                        .addGap(113, 113, 113)
                         .addComponent(lblGanhador))
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(156, 156, 156)
-                        .addComponent(lblTitulo)))
-                .addContainerGap(165, Short.MAX_VALUE))
+                        .addGap(161, 161, 161)
+                        .addComponent(btnFechar, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(135, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
                 .addComponent(lblTitulo)
                 .addGap(1, 1, 1)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -126,7 +182,7 @@ public class JFrameApuracao extends javax.swing.JFrame {
                 .addComponent(lblBrancos)
                 .addGap(18, 18, 18)
                 .addComponent(lblNulos)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 12, Short.MAX_VALUE)
                 .addComponent(lblGanhador)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(btnFechar, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
