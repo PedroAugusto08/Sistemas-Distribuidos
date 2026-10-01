@@ -4,6 +4,8 @@
  */
 package pacote;
 
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author Pedro
@@ -155,11 +157,36 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnAtivarDesktopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAtivarDesktopActionPerformed
-        if(btnAtivarDesktop.isSelected() == true){
-            btnAtivarDesktop.setText("DESATIVAR");
-        }else{
+        if(btnAtivarDesktop.isSelected()){
+        btnAtivarDesktop.setText("DESATIVAR");
+
+        Util.desktopRecepcaoThread = new DesktopRecepcaoThread();
+        Thread.ofVirtual().start(Util.desktopRecepcaoThread);
+        
+        Util.desktopEnvioThread = new DesktopEnvioThread();
+        Thread.ofVirtual().start(Util.desktopEnvioThread);
+
+    }else{
+        int resposta = JOptionPane.showConfirmDialog(
+            null,
+            "Deseja realmente parar os serviços para clientes DESKTOP?",
+            "Confirmação",
+            JOptionPane.YES_NO_OPTION
+        );
+
+        if(resposta == JOptionPane.YES_OPTION){
             btnAtivarDesktop.setText("ATIVAR");
+
+            if(Util.desktopRecepcaoThread != null){
+                Util.desktopRecepcaoThread.pararServidor();
+                Util.desktopRecepcaoThread = null;
+            }
+
+        }else{
+            btnAtivarDesktop.setSelected(true);
+            btnAtivarDesktop.setText("DESATIVAR");
         }
+    }
     }//GEN-LAST:event_btnAtivarDesktopActionPerformed
 
     private void btnAtivarWebActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAtivarWebActionPerformed

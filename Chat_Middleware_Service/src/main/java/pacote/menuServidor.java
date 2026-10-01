@@ -12,15 +12,6 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-
-/**
- *
- * @author Pedro
- */
 public class menuServidor {
     SystemTray Tray;
     TrayIcon Icon;
@@ -54,7 +45,6 @@ public class menuServidor {
                 mnuPainelControle.addActionListener(
                         new ActionListener(){
                     public void actionPerformed(ActionEvent e) {
-                        // throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
                         painelControle.setVisible(true);
                     }
                 });
