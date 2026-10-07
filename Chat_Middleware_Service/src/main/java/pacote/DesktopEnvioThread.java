@@ -10,24 +10,30 @@ import java.util.List;
 import javax.swing.JOptionPane;
 
 public class DesktopEnvioThread implements Runnable {
+    private volatile boolean ParadaManual = false;
     private Socket cliente;
     private ServerSocket emissor;
 
     @Override
     public void run() {
+        ObjectOutputStream output = null;
+
         try {
             emissor = new ServerSocket(Util.PortaEnvioDesktop);
 
-            cliente = emissor.accept();
+            if(ParadaManual){
+                return;
+            }
 
-            ObjectOutputStream output = new ObjectOutputStream(cliente.getOutputStream());
+            cliente = emissor.accept();
+            output = new ObjectOutputStream(cliente.getOutputStream());
 
             int mensagensEnviadas = 0;
 
-            while(!cliente.isClosed()) {
+            while(!ParadaManual && !cliente.isClosed()){
                 List<String> mensagens = Files.readAllLines(Path.of(Util.PathRepDesktop), StandardCharsets.UTF_8);
 
-                while(mensagensEnviadas < mensagens.size()) {
+                while(!ParadaManual && mensagensEnviadas < mensagens.size()){
                     String msg = mensagens.get(mensagensEnviadas);
 
                     output.writeUTF(msg);
@@ -39,13 +45,47 @@ public class DesktopEnvioThread implements Runnable {
                 Thread.sleep(200);
             }
 
-            output.close();
-            cliente.close();
-            emissor.close();
+        }catch(Exception e){
+            if(!ParadaManual){
+                JOptionPane.showMessageDialog(null, "Erro em DesktopEnvioThread: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }finally{
+            if(output != null){
+                try{
+                    output.close();
+                }catch(Exception e){
+                }
+            }
 
-        } catch(Exception e) {
-            JOptionPane.showMessageDialog(null, "Erro em DesktopEnvioThread: " + e.getMessage());
-            e.printStackTrace();
+            fecharConexoes();
+        }
+    }
+
+    public void pararServidor(){
+        ParadaManual = true;
+        fecharConexoes();
+    }
+
+    private void fecharConexoes(){
+        try{
+            if(cliente != null && !cliente.isClosed()){
+                cliente.close();
+            }
+        }catch(Exception e){
+            if(!ParadaManual){
+                JOptionPane.showMessageDialog(null, "Erro ao fechar cliente Desktop: " + e.getMessage());
+            }
+        }
+
+        try{
+            if(emissor != null && !emissor.isClosed()){
+                emissor.close();
+            }
+        }catch(Exception e){
+            if(!ParadaManual){
+                JOptionPane.showMessageDialog(null, "Erro ao fechar servidor de envio Desktop: " + e.getMessage());
+            }
         }
     }
 }

@@ -65,7 +65,7 @@ public class frmLogin extends javax.swing.JFrame {
         radioPreto.setText("Preto");
         radioPreto.addActionListener(this::radioPretoActionPerformed);
         getContentPane().add(radioPreto);
-        radioPreto.setBounds(170, 90, 70, 25);
+        radioPreto.setBounds(170, 80, 90, 50);
 
         grpCor.add(radioVermelho);
         radioVermelho.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -80,15 +80,15 @@ public class frmLogin extends javax.swing.JFrame {
         getContentPane().add(lblAvatar);
         lblAvatar.setBounds(30, 140, 60, 25);
 
-        lblMenina.setIcon(new javax.swing.ImageIcon("C:\\Users\\Pedro\\OneDrive\\Documentos\\NetBeansProjects\\Chat_Cliente_Desktop\\src\\main\\java\\imagens\\menina.png")); // NOI18N
+        lblMenina.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagens/menina.png")));
         lblMenina.setLabelFor(radMenina);
         getContentPane().add(lblMenina);
-        lblMenina.setBounds(130, 130, 40, 40);
+        lblMenina.setBounds(140, 130, 40, 40);
 
-        lblMenino.setIcon(new javax.swing.ImageIcon("C:\\Users\\Pedro\\OneDrive\\Documentos\\NetBeansProjects\\Chat_Cliente_Desktop\\src\\main\\java\\imagens\\menino.png")); // NOI18N
+        lblMenino.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagens/menino.png")));
         lblMenino.setLabelFor(radMenino);
         getContentPane().add(lblMenino);
-        lblMenino.setBounds(210, 130, 32, 32);
+        lblMenino.setBounds(220, 130, 40, 40);
 
         grpAvatar.add(radMenina);
         radMenina.addActionListener(this::radMeninaActionPerformed);
@@ -105,10 +105,10 @@ public class frmLogin extends javax.swing.JFrame {
         getContentPane().add(radAvatar1);
         radAvatar1.setBounds(270, 140, 20, 20);
 
-        lblAzul.setIcon(new javax.swing.ImageIcon("C:\\Users\\Pedro\\OneDrive\\Documentos\\NetBeansProjects\\Chat_Cliente_Desktop\\src\\main\\java\\imagens\\avatar.png")); // NOI18N
+        lblAzul.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagens/avatar.png")));
         lblAzul.setLabelFor(radAvatar1);
         getContentPane().add(lblAzul);
-        lblAzul.setBounds(290, 130, 50, 30);
+        lblAzul.setBounds(300, 130, 60, 40);
 
         btnEntrar.setText("Entrar");
         btnEntrar.addActionListener(this::btnEntrarActionPerformed);

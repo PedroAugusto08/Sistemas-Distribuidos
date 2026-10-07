@@ -162,17 +162,12 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
 
         Util.desktopRecepcaoThread = new DesktopRecepcaoThread();
         Thread.ofVirtual().start(Util.desktopRecepcaoThread);
-        
+
         Util.desktopEnvioThread = new DesktopEnvioThread();
         Thread.ofVirtual().start(Util.desktopEnvioThread);
 
     }else{
-        int resposta = JOptionPane.showConfirmDialog(
-            null,
-            "Deseja realmente parar os serviços para clientes DESKTOP?",
-            "Confirmação",
-            JOptionPane.YES_NO_OPTION
-        );
+        int resposta = JOptionPane.showConfirmDialog(null, "Deseja realmente parar os serviços para clientes DESKTOP?", "Confirmação", JOptionPane.YES_NO_OPTION);
 
         if(resposta == JOptionPane.YES_OPTION){
             btnAtivarDesktop.setText("ATIVAR");
@@ -180,6 +175,11 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
             if(Util.desktopRecepcaoThread != null){
                 Util.desktopRecepcaoThread.pararServidor();
                 Util.desktopRecepcaoThread = null;
+            }
+
+            if(Util.desktopEnvioThread != null){
+                Util.desktopEnvioThread.pararServidor();
+                Util.desktopEnvioThread = null;
             }
 
         }else{

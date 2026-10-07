@@ -11,26 +11,24 @@ import javax.swing.text.html.HTMLEditorKit;
 
 public class frmChat extends javax.swing.JFrame {
     public String msg = "";
+    private final javax.swing.JPopupMenu popupEmoji = new javax.swing.JPopupMenu();
     
     public void gerarEnviarMensagem(){
         this.msg = "";
-        this.msg += "<img src = '" + Util.avatar +"' width='20' height='20'>";
-        this.msg += "<font color = '" + Util.cor +"'>";
-        this.msg += "<font color ='cor'> apelido <font>";
-        this.msg = this.msg.replace("cor", Util.cor);
-        this.msg = this.msg.replace("apelido", Util.nickname);
-        
+        this.msg += "<img src='" + Util.avatar + "' width='20' height='20'>";
+        this.msg += "<font color='" + Util.cor + "'> " + Util.nickname + "</font>";
+
         if(cbModo.getSelectedItem().toString().equals("Fala")){
             this.msg += "<b> Fala: </b>";
             this.msg += txtMensagem.getText();
         }else if(cbModo.getSelectedItem().toString().equals("Grita")){
-            this.msg += "<b><u> Grita: </b></u>";
-            this.msg += "<font color = 'tomato' size ='+1'>" + txtMensagem.getText().toUpperCase();
+            this.msg += "<b><u> Grita: </u></b>";
+            this.msg += "<font color='tomato' size='+1'>" + txtMensagem.getText().toUpperCase() + "</font>";
         }else if(cbModo.getSelectedItem().toString().equals("Xinga")){
-            this.msg += "<b><i><u> Grita: </b></i></u>";
-            this.msg += "<font color = 'DarkRed' size ='+2'>" + txtMensagem.getText().toUpperCase();
+            this.msg += "<b><i><u> Xinga: </u></i></b>";
+            this.msg += "<font color='DarkRed' size='+2'>" + txtMensagem.getText().toUpperCase() + "</font>";
         }
-        
+
         this.msg += "<br>";
         
         ArrayList <String> codigos = new ArrayList<String>();
@@ -59,12 +57,15 @@ public class frmChat extends javax.swing.JFrame {
         }
         
         try{
-            Socket cliente = new Socket("200.128.141.210", 6662);
+            Socket cliente = new Socket(Util.ipServidor, 6662);
             ObjectOutputStream output = new ObjectOutputStream(cliente.getOutputStream());
             
             output.writeUTF(this.msg);
             output.close();
             cliente.close();
+            
+            txtMensagem.setText("");
+            txtMensagem.requestFocus();
             
         }catch(Exception e){
             JOptionPane.showMessageDialog(null, "Erro cliente ao enviar: " +e.getMessage());
@@ -76,55 +77,78 @@ public class frmChat extends javax.swing.JFrame {
 
     public frmChat() {
         initComponents();
+        configurarPopupEmoji();
 
-        try {
-            HTMLDocument doc = (HTMLDocument) edtConversa.getDocument();
-            java.io.File pastaBase = new java.io.File("src/main/java/");
-            doc.setBase(pastaBase.toURI().toURL());
-
-            System.out.println("Base HTML: " + doc.getBase());
-            System.out.println("Imagem existe: " + new java.io.File("src/main/java/imagens/menino.png").exists());
-
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
+        HTMLDocument doc = (HTMLDocument) edtConversa.getDocument();
+        doc.setBase(getClass().getResource("/"));
 
         Thread.ofVirtual().start(() -> {
             try {
-                Socket cliente = new Socket("200.128.141.210", 6661);
-
+                Socket cliente = new Socket(Util.ipServidor, 6661);
                 ObjectInputStream input = new ObjectInputStream(cliente.getInputStream());
 
-                while(true) {
+                while(true){
                     String msgs = input.readUTF();
 
                     javax.swing.SwingUtilities.invokeLater(() -> {
                         try {
-                            HTMLDocument doc = (HTMLDocument) edtConversa.getDocument();
-
+                            HTMLDocument documento = (HTMLDocument) edtConversa.getDocument();
                             HTMLEditorKit kit = (HTMLEditorKit) edtConversa.getEditorKit();
-
-                            kit.insertHTML(doc, doc.getLength(), msgs, 0, 0, null);
-
-                        } catch(Exception e) {
+                            kit.insertHTML(documento, documento.getLength(), msgs, 0, 0, null);
+                        }catch(Exception e){
                             e.printStackTrace();
                         }
                     });
                 }
 
-            } catch(Exception e) {
-                JOptionPane.showMessageDialog(
-                        null,
-                        "Erro ao receber mensagem: " + e.getMessage()
-                );
+            }catch(Exception e){
+                JOptionPane.showMessageDialog(null, "Erro ao receber mensagem: " + e.getClass().getSimpleName() + "\n" + e.getMessage());
+                e.printStackTrace();
             }
         });
+    }
+    
+    private void configurarPopupEmoji(){
+        javax.swing.JTabbedPane abas = new javax.swing.JTabbedPane();
+
+        javax.swing.JPanel carinhas = new javax.swing.JPanel(new java.awt.GridLayout(2, 3, 5, 5));
+        adicionarEmoji(carinhas, "😁", ":-)");
+        adicionarEmoji(carinhas, "😉", ";-)");
+        adicionarEmoji(carinhas, "😂", "LOL");
+        adicionarEmoji(carinhas, "🗿", ":<)");
+        adicionarEmoji(carinhas, "😕", ":/");
+        adicionarEmoji(carinhas, "😍", ">3");
+
+        javax.swing.JPanel simbolos = new javax.swing.JPanel(new java.awt.GridLayout(1, 3, 5, 5));
+        adicionarEmoji(simbolos, "❤", "❤");
+        adicionarEmoji(simbolos, "💰", "💰");
+        adicionarEmoji(simbolos, "💋", "💋");
+
+        abas.addTab("Carinhas", carinhas);
+        abas.addTab("Símbolos", simbolos);
+
+        popupEmoji.add(abas);
+    }
+
+    private void adicionarEmoji(javax.swing.JPanel painel, String emoji, String valor){
+        javax.swing.JButton botao = new javax.swing.JButton(emoji);
+
+        botao.addActionListener(e -> {
+            txtMensagem.replaceSelection(valor);
+            txtMensagem.requestFocus();
+            popupEmoji.setVisible(false);
+        });
+
+        painel.add(botao);
     }
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jMenuBar1 = new javax.swing.JMenuBar();
+        jMenu1 = new javax.swing.JMenu();
+        jMenu2 = new javax.swing.JMenu();
         scrollConversa = new javax.swing.JScrollPane();
         edtConversa = new javax.swing.JEditorPane();
         lblMensagem = new javax.swing.JLabel();
@@ -132,19 +156,32 @@ public class frmChat extends javax.swing.JFrame {
         cbModo = new javax.swing.JComboBox<>();
         lblModo = new javax.swing.JLabel();
         lblEmoji = new javax.swing.JLabel();
-        cbEmoji = new javax.swing.JComboBox<>();
         btnEnviar = new javax.swing.JButton();
+        btnEmoji = new javax.swing.JButton();
+
+        jMenu1.setText("File");
+        jMenuBar1.add(jMenu1);
+
+        jMenu2.setText("Edit");
+        jMenuBar1.add(jMenu2);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("CHAT");
-        setMinimumSize(new java.awt.Dimension(488, 439));
+        setMinimumSize(new java.awt.Dimension(660, 550));
+        setPreferredSize(new java.awt.Dimension(645, 514));
+        getContentPane().setLayout(null);
 
         edtConversa.setEditable(false);
         edtConversa.setContentType("text/html"); // NOI18N
         scrollConversa.setViewportView(edtConversa);
 
-        lblMensagem.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        getContentPane().add(scrollConversa);
+        scrollConversa.setBounds(23, 14, 604, 276);
+
+        lblMensagem.setFont(new java.awt.Font("sansserif", 1, 18)); // NOI18N
         lblMensagem.setText("Mensagem");
+        getContentPane().add(lblMensagem);
+        lblMensagem.setBounds(20, 310, 100, 40);
 
         txtMensagem.addActionListener(this::txtMensagemActionPerformed);
         txtMensagem.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -152,16 +189,23 @@ public class frmChat extends javax.swing.JFrame {
                 txtMensagemKeyPressed(evt);
             }
         });
+        getContentPane().add(txtMensagem);
+        txtMensagem.setBounds(130, 310, 410, 40);
 
+        cbModo.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         cbModo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Fala", "Grita", "Xinga" }));
+        getContentPane().add(cbModo);
+        cbModo.setBounds(190, 370, 90, 40);
 
-        lblModo.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        lblModo.setFont(new java.awt.Font("sansserif", 1, 18)); // NOI18N
         lblModo.setText("Modo");
+        getContentPane().add(lblModo);
+        lblModo.setBounds(70, 380, 70, 24);
 
-        lblEmoji.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
+        lblEmoji.setFont(new java.awt.Font("sansserif", 1, 18)); // NOI18N
         lblEmoji.setText("Emoji");
-
-        cbEmoji.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Nenhum", "Coração", "Dinheiro", "Beijo" }));
+        getContentPane().add(lblEmoji);
+        lblEmoji.setBounds(70, 440, 60, 20);
 
         btnEnviar.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
         btnEnviar.setText("Enviar");
@@ -171,57 +215,13 @@ public class frmChat extends javax.swing.JFrame {
                 btnEnviarKeyPressed(evt);
             }
         });
+        getContentPane().add(btnEnviar);
+        btnEnviar.setBounds(400, 390, 150, 60);
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(17, Short.MAX_VALUE)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(6, 6, 6)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(lblModo, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(lblEmoji))
-                                .addGap(58, 58, 58)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(cbEmoji, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(cbModo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(btnEnviar, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(91, 91, 91))
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(lblMensagem, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(txtMensagem, javax.swing.GroupLayout.PREFERRED_SIZE, 320, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addContainerGap(46, Short.MAX_VALUE))))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(scrollConversa, javax.swing.GroupLayout.PREFERRED_SIZE, 454, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(15, 15, 15))))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(14, 14, 14)
-                .addComponent(scrollConversa, javax.swing.GroupLayout.PREFERRED_SIZE, 276, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(txtMensagem, javax.swing.GroupLayout.DEFAULT_SIZE, 28, Short.MAX_VALUE)
-                    .addComponent(lblMensagem))
-                .addGap(7, 7, 7)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnEnviar, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(cbModo, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(lblModo))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(cbEmoji, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(lblEmoji))
-                .addGap(21, 21, 21))
-        );
+        btnEmoji.setText("Emojis");
+        btnEmoji.addActionListener(this::btnEmojiActionPerformed);
+        getContentPane().add(btnEmoji);
+        btnEmoji.setBounds(550, 320, 72, 23);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -244,15 +244,22 @@ public class frmChat extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_txtMensagemKeyPressed
 
+    private void btnEmojiActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEmojiActionPerformed
+        popupEmoji.show(btnEmoji, 0, btnEmoji.getHeight());
+    }//GEN-LAST:event_btnEmojiActionPerformed
+
     public static void main(String args[]) {
         java.awt.EventQueue.invokeLater(() -> new frmChat().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnEmoji;
     private javax.swing.JButton btnEnviar;
-    private javax.swing.JComboBox<String> cbEmoji;
     private javax.swing.JComboBox<String> cbModo;
     private javax.swing.JEditorPane edtConversa;
+    private javax.swing.JMenu jMenu1;
+    private javax.swing.JMenu jMenu2;
+    private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JLabel lblEmoji;
     private javax.swing.JLabel lblMensagem;
     private javax.swing.JLabel lblModo;
