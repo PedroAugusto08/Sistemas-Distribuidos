@@ -40,7 +40,7 @@ public class frmLogin extends javax.swing.JFrame {
         lblNick.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
         lblNick.setText("Nickname:");
         getContentPane().add(lblNick);
-        lblNick.setBounds(30, 30, 100, 30);
+        lblNick.setBounds(20, 30, 100, 30);
 
         txtnickname.addActionListener(this::txtnicknameActionPerformed);
         getContentPane().add(txtnickname);
@@ -49,7 +49,7 @@ public class frmLogin extends javax.swing.JFrame {
         lblCor.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
         lblCor.setText("Cor:");
         getContentPane().add(lblCor);
-        lblCor.setBounds(30, 90, 40, 25);
+        lblCor.setBounds(20, 90, 40, 25);
 
         grpCor.add(radioAzul);
         radioAzul.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -65,7 +65,7 @@ public class frmLogin extends javax.swing.JFrame {
         radioPreto.setText("Preto");
         radioPreto.addActionListener(this::radioPretoActionPerformed);
         getContentPane().add(radioPreto);
-        radioPreto.setBounds(170, 80, 90, 50);
+        radioPreto.setBounds(190, 80, 90, 50);
 
         grpCor.add(radioVermelho);
         radioVermelho.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -73,17 +73,17 @@ public class frmLogin extends javax.swing.JFrame {
         radioVermelho.setText("Vermelho");
         radioVermelho.addActionListener(this::radioVermelhoActionPerformed);
         getContentPane().add(radioVermelho);
-        radioVermelho.setBounds(260, 90, 103, 25);
+        radioVermelho.setBounds(300, 90, 103, 25);
 
         lblAvatar.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
         lblAvatar.setText("Avatar:");
         getContentPane().add(lblAvatar);
-        lblAvatar.setBounds(30, 140, 60, 25);
+        lblAvatar.setBounds(20, 140, 60, 25);
 
         lblMenina.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagens/menina.png")));
         lblMenina.setLabelFor(radMenina);
         getContentPane().add(lblMenina);
-        lblMenina.setBounds(140, 130, 40, 40);
+        lblMenina.setBounds(110, 130, 40, 40);
 
         lblMenino.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagens/menino.png")));
         lblMenino.setLabelFor(radMenino);
@@ -93,7 +93,7 @@ public class frmLogin extends javax.swing.JFrame {
         grpAvatar.add(radMenina);
         radMenina.addActionListener(this::radMeninaActionPerformed);
         getContentPane().add(radMenina);
-        radMenina.setBounds(110, 140, 19, 20);
+        radMenina.setBounds(90, 140, 19, 20);
 
         grpAvatar.add(radMenino);
         radMenino.setSelected(true);
@@ -103,12 +103,12 @@ public class frmLogin extends javax.swing.JFrame {
         grpAvatar.add(radAvatar1);
         radAvatar1.addActionListener(this::radAvatar1ActionPerformed);
         getContentPane().add(radAvatar1);
-        radAvatar1.setBounds(270, 140, 20, 20);
+        radAvatar1.setBounds(300, 140, 20, 20);
 
         lblAzul.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagens/avatar.png")));
         lblAzul.setLabelFor(radAvatar1);
         getContentPane().add(lblAzul);
-        lblAzul.setBounds(300, 130, 60, 40);
+        lblAzul.setBounds(330, 130, 60, 40);
 
         btnEntrar.setText("Entrar");
         btnEntrar.addActionListener(this::btnEntrarActionPerformed);
@@ -148,11 +148,11 @@ public class frmLogin extends javax.swing.JFrame {
         Util.nickname = txtnickname.getText();
         
         if(radioAzul.isSelected()){
-            Util.cor = "DarkBlue";
-        }else if (radioVermelho.isSelected()) {
-            Util.cor = "DarkRed";
-        }else if (radioPreto.isSelected()){
-            Util.cor = "Black";
+            Util.cor = "#0000FF";
+        }else if(radioVermelho.isSelected()){
+            Util.cor = "#FF0000";
+        }else{
+            Util.cor = "#000000";
         }
         
         if(radMenino.isSelected()){

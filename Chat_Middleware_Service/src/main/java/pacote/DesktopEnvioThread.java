@@ -3,6 +3,7 @@ package pacote;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,82 +11,129 @@ import java.util.List;
 import javax.swing.JOptionPane;
 
 public class DesktopEnvioThread implements Runnable {
+    private static final String MSG_MANUTENCAO = "<b><font color='red'>Em manutenção...</font></b><br>";
+
     private volatile boolean ParadaManual = false;
     private Socket cliente;
     private ServerSocket emissor;
+    private volatile ObjectOutputStream output;
 
     @Override
     public void run() {
-        ObjectOutputStream output = null;
-
-        try {
+        try{
             emissor = new ServerSocket(Util.PortaEnvioDesktop);
 
-            if(ParadaManual){
-                return;
-            }
+            while(!ParadaManual){
+                try{
+                    cliente = emissor.accept();
 
-            cliente = emissor.accept();
-            output = new ObjectOutputStream(cliente.getOutputStream());
+                    if(ParadaManual){
+                        break;
+                    }
 
-            int mensagensEnviadas = 0;
+                    output = new ObjectOutputStream(cliente.getOutputStream());
+                    int mensagensEnviadas = 0;
+                    
+                    monitorarDesconexao(cliente);
 
-            while(!ParadaManual && !cliente.isClosed()){
-                List<String> mensagens = Files.readAllLines(Path.of(Util.PathRepDesktop), StandardCharsets.UTF_8);
+                    while(!ParadaManual && !cliente.isClosed()){
+                        List<String> mensagens = Files.readAllLines(Path.of(Util.PathRepDesktop), StandardCharsets.UTF_8);
 
-                while(!ParadaManual && mensagensEnviadas < mensagens.size()){
-                    String msg = mensagens.get(mensagensEnviadas);
+                        while(!ParadaManual && mensagensEnviadas < mensagens.size()){
+                            enviarMensagem(mensagens.get(mensagensEnviadas));
+                            mensagensEnviadas++;
+                        }
 
-                    output.writeUTF(msg);
-                    output.flush();
+                        Thread.sleep(200);
+                    }
 
-                    mensagensEnviadas++;
+                }catch(SocketException e){
+                    if(!ParadaManual){
+                        System.out.println("Cliente Desktop desconectado. Aguardando nova conexão...");
+                    }
+                }catch(Exception e){
+                    if(!ParadaManual){
+                        JOptionPane.showMessageDialog(null, "Erro em DesktopEnvioThread: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }finally{
+                    fecharCliente();
                 }
-
-                Thread.sleep(200);
             }
 
         }catch(Exception e){
             if(!ParadaManual){
-                JOptionPane.showMessageDialog(null, "Erro em DesktopEnvioThread: " + e.getMessage());
+                JOptionPane.showMessageDialog(null, "Erro ao iniciar serviço de envio Desktop: " + e.getMessage());
                 e.printStackTrace();
             }
         }finally{
-            if(output != null){
-                try{
-                    output.close();
-                }catch(Exception e){
-                }
-            }
-
             fecharConexoes();
         }
     }
 
+    private synchronized void enviarMensagem(String msg) throws Exception {
+        if(output != null){
+            output.writeUTF(msg);
+            output.flush();
+        }
+    }
+    
+    
+
     public void pararServidor(){
+        try{
+            enviarMensagem(MSG_MANUTENCAO);
+        }catch(Exception e){
+        }
+
         ParadaManual = true;
         fecharConexoes();
     }
 
-    private void fecharConexoes(){
+    private void fecharCliente(){
+        try{
+            if(output != null){
+                output.close();
+            }
+        }catch(Exception e){
+        }
+
         try{
             if(cliente != null && !cliente.isClosed()){
                 cliente.close();
             }
         }catch(Exception e){
-            if(!ParadaManual){
-                JOptionPane.showMessageDialog(null, "Erro ao fechar cliente Desktop: " + e.getMessage());
-            }
         }
+
+        output = null;
+        cliente = null;
+    }
+
+    private void fecharConexoes(){
+        fecharCliente();
 
         try{
             if(emissor != null && !emissor.isClosed()){
                 emissor.close();
             }
         }catch(Exception e){
-            if(!ParadaManual){
-                JOptionPane.showMessageDialog(null, "Erro ao fechar servidor de envio Desktop: " + e.getMessage());
-            }
         }
+    }
+    
+    private void monitorarDesconexao(Socket clienteAtual){
+        Thread.ofVirtual().start(() -> {
+            try{
+                while(!ParadaManual && clienteAtual.getInputStream().read() != -1){
+                }
+            }catch(Exception e){
+            }finally{
+                try{
+                    if(!clienteAtual.isClosed()){
+                        clienteAtual.close();
+                    }
+                }catch(Exception e){
+                }
+            }
+        });
     }
 }

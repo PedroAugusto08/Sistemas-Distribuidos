@@ -12,6 +12,7 @@ import javax.swing.text.html.HTMLEditorKit;
 public class frmChat extends javax.swing.JFrame {
     public String msg = "";
     private final javax.swing.JPopupMenu popupEmoji = new javax.swing.JPopupMenu();
+    private static final String MSG_MANUTENCAO = "<b><font color='red'>Em manutenção...</font></b><br>";
     
     public void gerarEnviarMensagem(){
         this.msg = "";
@@ -31,29 +32,28 @@ public class frmChat extends javax.swing.JFrame {
 
         this.msg += "<br>";
         
-        ArrayList <String> codigos = new ArrayList<String>();
-        ArrayList <String> simbolos = new ArrayList<String>();
-        
-        codigos.add(":-)");
-        simbolos.add("&#128513;");
-        
-        codigos.add(";-)");
-        simbolos.add("&#128521;");
-        
-        codigos.add("LOL");
-        simbolos.add("&#128514;");
-        
-        codigos.add(":<)");
-        simbolos.add("&#128511;");
-        
-        codigos.add(":/");
-        simbolos.add("&#128533;");
-        
-        codigos.add(">3");
-        simbolos.add("&#128525;");
-        
-        for(int i=0; i<codigos.size(); i++){
-            this.msg = this.msg.replace(codigos.get(i), simbolos.get(i));
+        String[][] carinhas = {
+            {":-)", "&#128578;"},  // 🙂
+            {":)",  "&#128578;"},
+            {";-)", "&#128521;"},  // 😉
+            {";)",  "&#128521;"},
+            {":-D", "&#128516;"},  // 😄
+            {":D",  "&#128516;"},
+            {"XD",  "&#128514;"},  // 😂
+            {":-(", "&#128577;"},  // 🙁
+            {":(",  "&#128577;"},
+            {":'(", "&#128546;"},  // 😢
+            {":-P", "&#128539;"},  // 😛
+            {":P",  "&#128539;"},
+            {":-/", "&#128533;"},  // 😕
+            {":/",  "&#128533;"},
+            {":-O", "&#128558;"},  // 😮
+            {":O",  "&#128558;"},
+            {"<3",  "&#10084;"}    // ❤
+        };
+
+        for(String[] carinha : carinhas){
+            this.msg = this.msg.replace(carinha[0], carinha[1]);
         }
         
         try{
@@ -83,27 +83,73 @@ public class frmChat extends javax.swing.JFrame {
         doc.setBase(getClass().getResource("/"));
 
         Thread.ofVirtual().start(() -> {
-            try {
-                Socket cliente = new Socket(Util.ipServidor, 6661);
-                ObjectInputStream input = new ObjectInputStream(cliente.getInputStream());
+            boolean reconectar = false;
 
-                while(true){
-                    String msgs = input.readUTF();
+            while(true){
+                try(Socket cliente = new Socket(Util.ipServidor, 6661);
+                    ObjectInputStream input = new ObjectInputStream(cliente.getInputStream())){
 
-                    javax.swing.SwingUtilities.invokeLater(() -> {
-                        try {
-                            HTMLDocument documento = (HTMLDocument) edtConversa.getDocument();
-                            HTMLEditorKit kit = (HTMLEditorKit) edtConversa.getEditorKit();
-                            kit.insertHTML(documento, documento.getLength(), msgs, 0, 0, null);
-                        }catch(Exception e){
-                            e.printStackTrace();
+                    if(reconectar){
+                        javax.swing.SwingUtilities.invokeLater(() -> {
+                            try{
+                                HTMLDocument documento = (HTMLDocument) edtConversa.getDocument();
+                                documento.remove(0, documento.getLength());
+
+                                btnEnviar.setEnabled(true);
+                                txtMensagem.setEnabled(true);
+                                btnEmoji.setEnabled(true);
+                                cbModo.setEnabled(true);
+                            }catch(Exception e){
+                                e.printStackTrace();
+                            }
+                        });
+
+                        reconectar = false;
+                    }
+
+                    while(true){
+                        String msgs = input.readUTF();
+
+                        javax.swing.SwingUtilities.invokeLater(() -> {
+                            try{
+                                HTMLDocument documento = (HTMLDocument) edtConversa.getDocument();
+                                HTMLEditorKit kit = (HTMLEditorKit) edtConversa.getEditorKit();
+                                kit.insertHTML(documento, documento.getLength(), msgs, 0, 0, null);
+                            }catch(Exception e){
+                                e.printStackTrace();
+                            }
+                        });
+
+                        if(msgs.equals(MSG_MANUTENCAO)){
+                            reconectar = true;
+
+                            javax.swing.SwingUtilities.invokeLater(() -> {
+                                btnEnviar.setEnabled(false);
+                                txtMensagem.setEnabled(false);
+                                btnEmoji.setEnabled(false);
+                                cbModo.setEnabled(false);
+                            });
+
+                            break;
                         }
-                    });
+                    }
+
+                }catch(Exception e){
+                    if(!reconectar){
+                        JOptionPane.showMessageDialog(null, "Erro ao receber mensagem: " + e.getClass().getSimpleName() + "\n" + e.getMessage());
+                        e.printStackTrace();
+                        break;
+                    }
                 }
 
-            }catch(Exception e){
-                JOptionPane.showMessageDialog(null, "Erro ao receber mensagem: " + e.getClass().getSimpleName() + "\n" + e.getMessage());
-                e.printStackTrace();
+                if(reconectar){
+                    try{
+                        Thread.sleep(1000);
+                    }catch(InterruptedException e){
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
             }
         });
     }
@@ -111,30 +157,35 @@ public class frmChat extends javax.swing.JFrame {
     private void configurarPopupEmoji(){
         javax.swing.JTabbedPane abas = new javax.swing.JTabbedPane();
 
-        javax.swing.JPanel carinhas = new javax.swing.JPanel(new java.awt.GridLayout(2, 3, 5, 5));
-        adicionarEmoji(carinhas, "😁", ":-)");
-        adicionarEmoji(carinhas, "😉", ";-)");
-        adicionarEmoji(carinhas, "😂", "LOL");
-        adicionarEmoji(carinhas, "🗿", ":<)");
-        adicionarEmoji(carinhas, "😕", ":/");
-        adicionarEmoji(carinhas, "😍", ">3");
+        javax.swing.JPanel emojis = new javax.swing.JPanel(new java.awt.GridLayout(3, 4, 5, 5));
 
-        javax.swing.JPanel simbolos = new javax.swing.JPanel(new java.awt.GridLayout(1, 3, 5, 5));
-        adicionarEmoji(simbolos, "❤", "❤");
-        adicionarEmoji(simbolos, "💰", "💰");
-        adicionarEmoji(simbolos, "💋", "💋");
+        adicionarEmoji(emojis, "😁");
+        adicionarEmoji(emojis, "😂");
+        adicionarEmoji(emojis, "😉");
+        adicionarEmoji(emojis, "😍");
+        adicionarEmoji(emojis, "😢");
+        adicionarEmoji(emojis, "😡");
+        adicionarEmoji(emojis, "👍");
+        adicionarEmoji(emojis, "👎");
+        adicionarEmoji(emojis, "❤");
+        adicionarEmoji(emojis, "💰");
+        adicionarEmoji(emojis, "💋");
+        adicionarEmoji(emojis, "🔥");
 
-        abas.addTab("Carinhas", carinhas);
-        abas.addTab("Símbolos", simbolos);
+        javax.swing.JPanel stickers = new javax.swing.JPanel();
+        stickers.add(new javax.swing.JLabel("Stickers em breve"));
+
+        abas.addTab("Emojis", emojis);
+        abas.addTab("Stickers", stickers);
 
         popupEmoji.add(abas);
     }
 
-    private void adicionarEmoji(javax.swing.JPanel painel, String emoji, String valor){
+    private void adicionarEmoji(javax.swing.JPanel painel, String emoji){
         javax.swing.JButton botao = new javax.swing.JButton(emoji);
 
         botao.addActionListener(e -> {
-            txtMensagem.replaceSelection(valor);
+            txtMensagem.replaceSelection(emoji);
             txtMensagem.requestFocus();
             popupEmoji.setVisible(false);
         });
@@ -155,7 +206,6 @@ public class frmChat extends javax.swing.JFrame {
         txtMensagem = new javax.swing.JTextField();
         cbModo = new javax.swing.JComboBox<>();
         lblModo = new javax.swing.JLabel();
-        lblEmoji = new javax.swing.JLabel();
         btnEnviar = new javax.swing.JButton();
         btnEmoji = new javax.swing.JButton();
 
@@ -167,7 +217,7 @@ public class frmChat extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("CHAT");
-        setMinimumSize(new java.awt.Dimension(660, 550));
+        setMinimumSize(new java.awt.Dimension(780, 550));
         setPreferredSize(new java.awt.Dimension(645, 514));
         getContentPane().setLayout(null);
 
@@ -176,13 +226,14 @@ public class frmChat extends javax.swing.JFrame {
         scrollConversa.setViewportView(edtConversa);
 
         getContentPane().add(scrollConversa);
-        scrollConversa.setBounds(23, 14, 604, 276);
+        scrollConversa.setBounds(23, 14, 720, 330);
 
-        lblMensagem.setFont(new java.awt.Font("sansserif", 1, 18)); // NOI18N
+        lblMensagem.setFont(new java.awt.Font("sansserif", 1, 16)); // NOI18N
         lblMensagem.setText("Mensagem");
         getContentPane().add(lblMensagem);
-        lblMensagem.setBounds(20, 310, 100, 40);
+        lblMensagem.setBounds(30, 370, 100, 40);
 
+        txtMensagem.setBackground(new java.awt.Color(204, 204, 204));
         txtMensagem.addActionListener(this::txtMensagemActionPerformed);
         txtMensagem.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
@@ -190,25 +241,21 @@ public class frmChat extends javax.swing.JFrame {
             }
         });
         getContentPane().add(txtMensagem);
-        txtMensagem.setBounds(130, 310, 410, 40);
+        txtMensagem.setBounds(120, 370, 470, 40);
 
         cbModo.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         cbModo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Fala", "Grita", "Xinga" }));
         getContentPane().add(cbModo);
-        cbModo.setBounds(190, 370, 90, 40);
+        cbModo.setBounds(120, 430, 90, 40);
 
         lblModo.setFont(new java.awt.Font("sansserif", 1, 18)); // NOI18N
         lblModo.setText("Modo");
         getContentPane().add(lblModo);
-        lblModo.setBounds(70, 380, 70, 24);
+        lblModo.setBounds(40, 440, 70, 24);
 
-        lblEmoji.setFont(new java.awt.Font("sansserif", 1, 18)); // NOI18N
-        lblEmoji.setText("Emoji");
-        getContentPane().add(lblEmoji);
-        lblEmoji.setBounds(70, 440, 60, 20);
-
+        btnEnviar.setBackground(new java.awt.Color(0, 255, 0));
         btnEnviar.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
-        btnEnviar.setText("Enviar");
+        btnEnviar.setText("➤");
         btnEnviar.addActionListener(this::btnEnviarActionPerformed);
         btnEnviar.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
@@ -216,12 +263,13 @@ public class frmChat extends javax.swing.JFrame {
             }
         });
         getContentPane().add(btnEnviar);
-        btnEnviar.setBounds(400, 390, 150, 60);
+        btnEnviar.setBounds(670, 370, 70, 40);
 
-        btnEmoji.setText("Emojis");
+        btnEmoji.setBackground(new java.awt.Color(204, 204, 204));
+        btnEmoji.setText("🙂");
         btnEmoji.addActionListener(this::btnEmojiActionPerformed);
         getContentPane().add(btnEmoji);
-        btnEmoji.setBounds(550, 320, 72, 23);
+        btnEmoji.setBounds(610, 370, 50, 40);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -260,7 +308,6 @@ public class frmChat extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuBar jMenuBar1;
-    private javax.swing.JLabel lblEmoji;
     private javax.swing.JLabel lblMensagem;
     private javax.swing.JLabel lblModo;
     private javax.swing.JScrollPane scrollConversa;
