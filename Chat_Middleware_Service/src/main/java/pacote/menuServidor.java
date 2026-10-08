@@ -29,8 +29,9 @@ public class menuServidor {
                 return;
             }else{
                 Tray = SystemTray.getSystemTray();
-                ImageIcon imgIcone = new ImageIcon("C:\\Users\\Pedro\\OneDrive\\Documentos\\NetBeansProjects\\Chat_Middleware_Service\\src\\main\\java\\pacote\\imgs\\icon.png", "servidor do chat");
-                Icon = new TrayIcon(imgIcone.getImage());
+                
+                ImageIcon imgIcone = new ImageIcon(getClass().getResource("/imagens/icon.png"));
+                Icon = new TrayIcon(imgIcone.getImage(), "Servidor do Chat");
                 Icon.setImageAutoSize(true);
                 
                 popup = new PopupMenu();

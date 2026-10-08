@@ -1,6 +1,5 @@
 package pacote;
 
-import java.awt.event.KeyEvent;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
@@ -15,6 +14,11 @@ public class frmChat extends javax.swing.JFrame {
     private static final String MSG_MANUTENCAO = "<b><font color='red'>Em manutenção...</font></b><br>";
     
     public void gerarEnviarMensagem(){
+        
+        if(txtMensagem.getText().isBlank()){
+            return;
+        } 
+        
         this.msg = "";
         this.msg += "<img src='" + Util.avatar + "' width='20' height='20'>";
         this.msg += "<font color='" + Util.cor + "'> " + Util.nickname + "</font>";
@@ -77,6 +81,9 @@ public class frmChat extends javax.swing.JFrame {
 
     public frmChat() {
         initComponents();
+      
+        javax.swing.SwingUtilities.invokeLater(() -> txtMensagem.requestFocusInWindow());
+        getRootPane().setDefaultButton(btnEnviar);
         configurarPopupEmoji();
 
         HTMLDocument doc = (HTMLDocument) edtConversa.getDocument();
@@ -115,6 +122,7 @@ public class frmChat extends javax.swing.JFrame {
                                 HTMLDocument documento = (HTMLDocument) edtConversa.getDocument();
                                 HTMLEditorKit kit = (HTMLEditorKit) edtConversa.getEditorKit();
                                 kit.insertHTML(documento, documento.getLength(), msgs, 0, 0, null);
+                                edtConversa.setCaretPosition(documento.getLength());
                             }catch(Exception e){
                                 e.printStackTrace();
                             }
@@ -171,9 +179,19 @@ public class frmChat extends javax.swing.JFrame {
         adicionarEmoji(emojis, "💰");
         adicionarEmoji(emojis, "💋");
         adicionarEmoji(emojis, "🔥");
+        adicionarEmoji(emojis, "🦉");
+        adicionarEmoji(emojis, "🤔");
+        adicionarEmoji(emojis, "🎉");
 
-        javax.swing.JPanel stickers = new javax.swing.JPanel();
-        stickers.add(new javax.swing.JLabel("Stickers em breve"));
+        javax.swing.JPanel stickers = new javax.swing.JPanel(new java.awt.GridLayout(2, 2, 5, 5));
+
+        adicionarSticker(stickers, "baby.gif");
+        adicionarSticker(stickers, "cat.gif");
+        adicionarSticker(stickers, "JJJ.gif");
+        adicionarSticker(stickers, "sigma.gif");
+        adicionarSticker(stickers, "thinking.gif");
+        adicionarSticker(stickers, "shrek.gif");
+        adicionarSticker(stickers, "cristiano.gif");
 
         abas.addTab("Emojis", emojis);
         abas.addTab("Stickers", stickers);
@@ -192,6 +210,45 @@ public class frmChat extends javax.swing.JFrame {
 
         painel.add(botao);
     }
+    
+    private void adicionarSticker(javax.swing.JPanel painel, String arquivo){
+        java.net.URL url = getClass().getResource("/stickers/" + arquivo);
+
+        if(url == null){
+            System.err.println("Sticker não encontrado: " + arquivo);
+            return;
+        }
+
+        javax.swing.ImageIcon imagem = new javax.swing.ImageIcon(url);
+        javax.swing.JButton botao = new javax.swing.JButton(imagem);
+
+        botao.setPreferredSize(new java.awt.Dimension(140, 140));
+        botao.setToolTipText(arquivo);
+
+        botao.addActionListener(e -> {
+            popupEmoji.setVisible(false);
+            enviarSticker(arquivo);
+        });
+
+        painel.add(botao);
+    }
+    
+    private void enviarSticker(String arquivo){
+        String mensagem = "<img src='" + Util.avatar + "' width='20' height='20'>";
+        mensagem += "<font color='" + Util.cor + "'> " + Util.nickname + "</font><br>";
+        mensagem += "<img src='stickers/" + arquivo + "' width='128' height='128'><br>";
+
+        try(Socket cliente = new Socket(Util.ipServidor, 6662);
+            ObjectOutputStream output = new ObjectOutputStream(cliente.getOutputStream())){
+
+            output.writeUTF(mensagem);
+            output.flush();
+
+        }catch(Exception e){
+            JOptionPane.showMessageDialog(null, "Erro ao enviar sticker: " + e.getMessage());
+            e.printStackTrace();
+        }
+}
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -226,32 +283,27 @@ public class frmChat extends javax.swing.JFrame {
         scrollConversa.setViewportView(edtConversa);
 
         getContentPane().add(scrollConversa);
-        scrollConversa.setBounds(23, 14, 720, 330);
+        scrollConversa.setBounds(13, 14, 740, 330);
 
         lblMensagem.setFont(new java.awt.Font("sansserif", 1, 16)); // NOI18N
         lblMensagem.setText("Mensagem");
         getContentPane().add(lblMensagem);
-        lblMensagem.setBounds(30, 370, 100, 40);
+        lblMensagem.setBounds(30, 420, 100, 40);
 
-        txtMensagem.setBackground(new java.awt.Color(204, 204, 204));
+        txtMensagem.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
         txtMensagem.addActionListener(this::txtMensagemActionPerformed);
-        txtMensagem.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                txtMensagemKeyPressed(evt);
-            }
-        });
         getContentPane().add(txtMensagem);
-        txtMensagem.setBounds(120, 370, 470, 40);
+        txtMensagem.setBounds(120, 420, 470, 40);
 
         cbModo.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         cbModo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Fala", "Grita", "Xinga" }));
         getContentPane().add(cbModo);
-        cbModo.setBounds(120, 430, 90, 40);
+        cbModo.setBounds(120, 360, 90, 40);
 
         lblModo.setFont(new java.awt.Font("sansserif", 1, 18)); // NOI18N
         lblModo.setText("Modo");
         getContentPane().add(lblModo);
-        lblModo.setBounds(40, 440, 70, 24);
+        lblModo.setBounds(30, 370, 70, 24);
 
         btnEnviar.setBackground(new java.awt.Color(0, 255, 0));
         btnEnviar.setFont(new java.awt.Font("sansserif", 1, 14)); // NOI18N
@@ -263,19 +315,20 @@ public class frmChat extends javax.swing.JFrame {
             }
         });
         getContentPane().add(btnEnviar);
-        btnEnviar.setBounds(670, 370, 70, 40);
+        btnEnviar.setBounds(670, 420, 70, 40);
 
         btnEmoji.setBackground(new java.awt.Color(204, 204, 204));
+        btnEmoji.setFont(new java.awt.Font("SansSerif", 0, 20)); // NOI18N
         btnEmoji.setText("🙂");
         btnEmoji.addActionListener(this::btnEmojiActionPerformed);
         getContentPane().add(btnEmoji);
-        btnEmoji.setBounds(610, 370, 50, 40);
+        btnEmoji.setBounds(600, 420, 60, 40);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void txtMensagemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtMensagemActionPerformed
-        // TODO add your handling code here:
+        gerarEnviarMensagem();
     }//GEN-LAST:event_txtMensagemActionPerformed
 
     private void btnEnviarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnviarActionPerformed
@@ -285,12 +338,6 @@ public class frmChat extends javax.swing.JFrame {
     private void btnEnviarKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_btnEnviarKeyPressed
         // TODO add your handling code here:
     }//GEN-LAST:event_btnEnviarKeyPressed
-
-    private void txtMensagemKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtMensagemKeyPressed
-        if(evt.getKeyCode() == KeyEvent.VK_ENTER){
-            this.gerarEnviarMensagem();
-        }
-    }//GEN-LAST:event_txtMensagemKeyPressed
 
     private void btnEmojiActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEmojiActionPerformed
         popupEmoji.show(btnEmoji, 0, btnEmoji.getHeight());

@@ -8,6 +8,52 @@ public class frmLogin extends javax.swing.JFrame {
 
     public frmLogin() {
         initComponents();
+        configurarSelecaoAvatares();
+    }
+    
+    private void configurarSelecaoAvatares(){
+        lblMenina.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        lblMenino.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        lblAzul.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+
+        lblMenina.addMouseListener(new java.awt.event.MouseAdapter(){
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt){
+                radMenina.setSelected(true);
+                atualizarBordasAvatares();
+            }
+        });
+
+        lblMenino.addMouseListener(new java.awt.event.MouseAdapter(){
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt){
+                radMenino.setSelected(true);
+                atualizarBordasAvatares();
+            }
+        });
+
+        lblAzul.addMouseListener(new java.awt.event.MouseAdapter(){
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt){
+                radAvatar1.setSelected(true);
+                atualizarBordasAvatares();
+            }
+        });
+
+        radMenina.addActionListener(e -> atualizarBordasAvatares());
+        radMenino.addActionListener(e -> atualizarBordasAvatares());
+        radAvatar1.addActionListener(e -> atualizarBordasAvatares());
+
+        atualizarBordasAvatares();
+    }
+    
+    private void atualizarBordasAvatares(){
+        javax.swing.border.Border normal = javax.swing.BorderFactory.createEmptyBorder(3, 3, 3, 3);
+        javax.swing.border.Border selecionado = javax.swing.BorderFactory.createLineBorder(new java.awt.Color(37, 99, 235), 3);
+
+        lblMenina.setBorder(radMenina.isSelected() ? selecionado : normal);
+        lblMenino.setBorder(radMenino.isSelected() ? selecionado : normal);
+        lblAzul.setBorder(radAvatar1.isSelected() ? selecionado : normal);
     }
 
     @SuppressWarnings("unchecked")
@@ -17,7 +63,6 @@ public class frmLogin extends javax.swing.JFrame {
         grpCor = new javax.swing.ButtonGroup();
         grpAvatar = new javax.swing.ButtonGroup();
         lblNick = new javax.swing.JLabel();
-        txtnickname = new java.awt.TextField();
         lblCor = new javax.swing.JLabel();
         radioAzul = new javax.swing.JRadioButton();
         radioPreto = new javax.swing.JRadioButton();
@@ -30,97 +75,121 @@ public class frmLogin extends javax.swing.JFrame {
         radAvatar1 = new javax.swing.JRadioButton();
         lblAzul = new javax.swing.JLabel();
         btnEntrar = new javax.swing.JButton();
+        lblTitulo = new javax.swing.JLabel();
+        lblSubtitulo = new javax.swing.JLabel();
+        txtnickname = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("LOGIN");
-        setMinimumSize(new java.awt.Dimension(443, 353));
+        setMinimumSize(new java.awt.Dimension(440, 480));
         setName("frmLogin"); // NOI18N
         getContentPane().setLayout(null);
 
         lblNick.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
-        lblNick.setText("Nickname:");
+        lblNick.setText("Nickname");
         getContentPane().add(lblNick);
-        lblNick.setBounds(20, 30, 100, 30);
-
-        txtnickname.addActionListener(this::txtnicknameActionPerformed);
-        getContentPane().add(txtnickname);
-        txtnickname.setBounds(130, 30, 200, 30);
+        lblNick.setBounds(30, 70, 100, 30);
 
         lblCor.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
-        lblCor.setText("Cor:");
+        lblCor.setText("Escolha sua cor");
         getContentPane().add(lblCor);
-        lblCor.setBounds(20, 90, 40, 25);
+        lblCor.setBounds(30, 150, 140, 25);
 
         grpCor.add(radioAzul);
         radioAzul.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         radioAzul.setForeground(new java.awt.Color(0, 51, 255));
         radioAzul.setText("Azul");
+        radioAzul.setMaximumSize(new java.awt.Dimension(100, 100));
+        radioAzul.setMinimumSize(new java.awt.Dimension(100, 100));
         radioAzul.addActionListener(this::radioAzulActionPerformed);
         getContentPane().add(radioAzul);
-        radioAzul.setBounds(90, 90, 90, 25);
+        radioAzul.setBounds(40, 180, 90, 25);
 
         grpCor.add(radioPreto);
         radioPreto.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         radioPreto.setSelected(true);
         radioPreto.setText("Preto");
+        radioPreto.setMaximumSize(new java.awt.Dimension(100, 100));
+        radioPreto.setMinimumSize(new java.awt.Dimension(100, 100));
         radioPreto.addActionListener(this::radioPretoActionPerformed);
         getContentPane().add(radioPreto);
-        radioPreto.setBounds(190, 80, 90, 50);
+        radioPreto.setBounds(190, 170, 90, 50);
 
         grpCor.add(radioVermelho);
         radioVermelho.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         radioVermelho.setForeground(new java.awt.Color(255, 51, 51));
         radioVermelho.setText("Vermelho");
+        radioVermelho.setMaximumSize(new java.awt.Dimension(100, 100));
+        radioVermelho.setMinimumSize(new java.awt.Dimension(100, 100));
         radioVermelho.addActionListener(this::radioVermelhoActionPerformed);
         getContentPane().add(radioVermelho);
-        radioVermelho.setBounds(300, 90, 103, 25);
+        radioVermelho.setBounds(310, 180, 103, 30);
 
         lblAvatar.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
-        lblAvatar.setText("Avatar:");
+        lblAvatar.setText("Escolha seu avatar");
         getContentPane().add(lblAvatar);
-        lblAvatar.setBounds(20, 140, 60, 25);
+        lblAvatar.setBounds(30, 240, 160, 25);
 
         lblMenina.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagens/menina.png")));
         lblMenina.setLabelFor(radMenina);
         getContentPane().add(lblMenina);
-        lblMenina.setBounds(110, 130, 40, 40);
+        lblMenina.setBounds(40, 270, 40, 40);
 
         lblMenino.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagens/menino.png")));
         lblMenino.setLabelFor(radMenino);
         getContentPane().add(lblMenino);
-        lblMenino.setBounds(220, 130, 40, 40);
+        lblMenino.setBounds(190, 270, 40, 40);
 
         grpAvatar.add(radMenina);
         radMenina.addActionListener(this::radMeninaActionPerformed);
         getContentPane().add(radMenina);
-        radMenina.setBounds(90, 140, 19, 20);
+        radMenina.setBounds(50, 310, 19, 20);
 
         grpAvatar.add(radMenino);
         radMenino.setSelected(true);
+        radMenino.addActionListener(this::radMeninoActionPerformed);
         getContentPane().add(radMenino);
-        radMenino.setBounds(190, 140, 20, 20);
+        radMenino.setBounds(200, 310, 20, 20);
 
         grpAvatar.add(radAvatar1);
         radAvatar1.addActionListener(this::radAvatar1ActionPerformed);
         getContentPane().add(radAvatar1);
-        radAvatar1.setBounds(300, 140, 20, 20);
+        radAvatar1.setBounds(340, 310, 20, 20);
 
         lblAzul.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagens/avatar.png")));
         lblAzul.setLabelFor(radAvatar1);
         getContentPane().add(lblAzul);
-        lblAzul.setBounds(330, 130, 60, 40);
+        lblAzul.setBounds(330, 270, 40, 40);
 
-        btnEntrar.setText("Entrar");
+        btnEntrar.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        btnEntrar.setText("Entrar no chat");
+        btnEntrar.setMaximumSize(new java.awt.Dimension(300, 100));
+        btnEntrar.setMinimumSize(new java.awt.Dimension(200, 42));
+        btnEntrar.setPreferredSize(new java.awt.Dimension(200, 42));
         btnEntrar.addActionListener(this::btnEntrarActionPerformed);
         getContentPane().add(btnEntrar);
-        btnEntrar.setBounds(170, 240, 90, 30);
+        btnEntrar.setBounds(140, 380, 140, 40);
+
+        lblTitulo.setFont(new java.awt.Font("SansSerif", 1, 20)); // NOI18N
+        lblTitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblTitulo.setText("Bem-vindo ao Chat");
+        getContentPane().add(lblTitulo);
+        lblTitulo.setBounds(110, 10, 220, 16);
+
+        lblSubtitulo.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
+        lblSubtitulo.setForeground(new java.awt.Color(51, 51, 51));
+        lblSubtitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblSubtitulo.setText("Personalize seu perfil para entrar");
+        getContentPane().add(lblSubtitulo);
+        lblSubtitulo.setBounds(100, 30, 240, 19);
+
+        txtnickname.setToolTipText("Digite seu apelido...");
+        txtnickname.addActionListener(this::txtnicknameActionPerformed);
+        getContentPane().add(txtnickname);
+        txtnickname.setBounds(30, 100, 360, 22);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void txtnicknameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtnicknameActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txtnicknameActionPerformed
 
     private void radioAzulActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radioAzulActionPerformed
         // TODO add your handling code here:
@@ -171,6 +240,14 @@ public class frmLogin extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btnEntrarActionPerformed
 
+    private void radMeninoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radMeninoActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_radMeninoActionPerformed
+
+    private void txtnicknameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtnicknameActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtnicknameActionPerformed
+
     public static void main(String args[]) {
         java.awt.EventQueue.invokeLater(() -> new frmLogin().setVisible(true));
     }
@@ -185,12 +262,14 @@ public class frmLogin extends javax.swing.JFrame {
     private javax.swing.JLabel lblMenina;
     private javax.swing.JLabel lblMenino;
     private javax.swing.JLabel lblNick;
+    private javax.swing.JLabel lblSubtitulo;
+    private javax.swing.JLabel lblTitulo;
     private javax.swing.JRadioButton radAvatar1;
     private javax.swing.JRadioButton radMenina;
     private javax.swing.JRadioButton radMenino;
     private javax.swing.JRadioButton radioAzul;
     private javax.swing.JRadioButton radioPreto;
     private javax.swing.JRadioButton radioVermelho;
-    private java.awt.TextField txtnickname;
+    private javax.swing.JTextField txtnickname;
     // End of variables declaration//GEN-END:variables
 }
