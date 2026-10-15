@@ -8,7 +8,7 @@
     <body>
         <br><br><br>
         <center>
-            <form name="frmLogin" action="chatUsp" method="get">
+            <form name="frmLogin" action="chat.jsp" method="post">
                 <table border="1">
                     <tr>
                         <td colspan="2" bgcolor="crimson" align="center">
@@ -37,7 +37,7 @@
                     <tr>
                         <td align="right"><b>Avatar: </b></td>
                         <td>
-                            <input type="radio" name="radAvatar" value="menino.png">
+                            <input type="radio" name="radAvatar" value="menino.png" checked>
                             <img src="images/menino.png" width="30" height="30">
                  
                             <input type="radio" name="radAvatar" value="menina.png">
