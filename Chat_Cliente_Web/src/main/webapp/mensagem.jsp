@@ -16,7 +16,7 @@
             
             if (request.getParameter("btnEnviar") != null) {
                 String msg = "";
-                msg += "<img src='" + urlFigurinhas + "/imagens/" + session.getAttribute("avatar") + "' width='30' height='30'>";
+                msg += "<img src='/figurinhas/imagens/" + session.getAttribute("avatar") + "' width='30' height='30'>";
 
                 msg += "<font size=\"+1\" color=\"" + session.getAttribute("cor") + "\"><b>" + session.getAttribute("nickname")
                         + "</b></font>";
@@ -26,7 +26,7 @@
                 String emoji = request.getParameter("cbEmoji");
 
                 if(emoji != null && !emoji.isBlank()){
-                    msg += "<img src='" + urlFigurinhas + "/" + emoji + "' width='30' height='30'>";
+                    msg += "<img src='/figurinhas/" + emoji + "' width='30' height='30'>";
                 }
 
                 msg += "<br>";

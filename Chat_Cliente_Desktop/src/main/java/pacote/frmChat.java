@@ -45,7 +45,7 @@ public class frmChat extends javax.swing.JFrame {
         }
 
         this.msg = "";
-        this.msg += "<img src='" + Util.urlFigurinhas + "/" + Util.avatar + "' width='20' height='20'>";
+        this.msg += "<img src='/figurinhas/" + Util.avatar + "' width='20' height='20'>";
         this.msg += "<font color='" + Util.cor + "'> " + Util.nickname + "</font>";
 
         if(cbModo.getSelectedItem().toString().equals("Fala")){
@@ -88,7 +88,12 @@ public class frmChat extends javax.swing.JFrame {
         configurarPopupEmoji();
 
         HTMLDocument doc = (HTMLDocument) edtConversa.getDocument();
-        doc.setBase(getClass().getResource("/"));
+        try{
+            // Resolve as imagens do HTML usando o endereço do servidor Web.
+            doc.setBase(java.net.URI.create(Util.urlFigurinhas + "/").toURL());
+        }catch(Exception e){
+            throw new IllegalStateException("Endereço inválido do servidor de figurinhas.", e);
+        }
 
         Thread.ofVirtual().start(() -> {
             boolean reconectar = false;
@@ -253,9 +258,9 @@ public class frmChat extends javax.swing.JFrame {
     }
     
     private void enviarSticker(String arquivo){
-        String mensagem = "<img src='" + Util.urlFigurinhas + "/" + Util.avatar + "' width='20' height='20'>";
+        String mensagem = "<img src='/figurinhas/" + Util.avatar + "' width='20' height='20'>";
         mensagem += "<font color='" + Util.cor + "'> " + Util.nickname + "</font><br>";
-        mensagem += "<img src='" + Util.urlFigurinhas + "/stickers/" + arquivo + "' width='128' height='128'><br>";
+        mensagem += "<img src='/figurinhas/stickers/" + arquivo + "' width='128' height='128'><br>";
 
         try(Socket cliente = new Socket(Util.ipServidor, 6662);
             ObjectOutputStream output = new ObjectOutputStream(cliente.getOutputStream())){

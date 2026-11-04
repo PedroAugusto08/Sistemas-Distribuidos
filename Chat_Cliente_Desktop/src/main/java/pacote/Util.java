@@ -6,6 +6,9 @@ public class Util {
     public static String cor = "";
     public static String avatar = "";
     
-    // Endereço HTTP centralizado das imagens e figurinhas.
-    public static String urlFigurinhas = "http://200.128.142.50:8080/figurinhas";
+    // Configurável na inicialização. O padrão atende ao servidor local.
+    public static String urlFigurinhas = System.getProperty(
+        "chat.figurinhas.url",
+        "http://localhost:8080/figurinhas"
+    );
 }
