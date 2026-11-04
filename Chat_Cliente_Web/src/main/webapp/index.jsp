@@ -38,13 +38,13 @@
                         <td align="right"><b>Avatar: </b></td>
                         <td>
                             <input type="radio" name="radAvatar" value="menino.png" checked>
-                            <img src="images/menino.png" width="30" height="30">
+                            <img src="imagens/menino.png" width="30" height="30">
                  
                             <input type="radio" name="radAvatar" value="menina.png">
-                            <img src="images/menina.png" width="30" height="30">
+                            <img src="imagens/menina.png" width="30" height="30">
 
                             <input type="radio" name="radAvatar" value="avatar.png">
-                            <img src="images/avatar.png" width="30" height="30">
+                            <img src="imagens/avatar.png" width="30" height="30">
                         </td>
                     </tr>
                     <tr>

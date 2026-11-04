@@ -16,7 +16,7 @@
             /*out.print("<img src=\"images/" + session.getAttribute("avatar") +"\" width=\"50\" + height=\"50\">");*/
         %>
         
-        <img src="images/<%=session.getAttribute("avatar")%>" width="50" height="50">
+        <img src="imagens/<%=session.getAttribute("avatar")%>" width="50" height="50">
         <font size="+2" color="<%=session.getAttribute("cor")%>">
             <b><%=session.getAttribute("nickname")%></b></font>
         
