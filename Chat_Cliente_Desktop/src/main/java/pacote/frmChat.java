@@ -14,28 +14,12 @@ public class frmChat extends javax.swing.JFrame {
     private static final String MSG_MANUTENCAO = "<b><font color='red'>Em manutenção...</font></b><br>";
     
     public void gerarEnviarMensagem(){
-        
         if(txtMensagem.getText().isBlank()){
             return;
-        } 
-        
-        this.msg = "";
-        this.msg += "<img src='" + Util.urlFigurinhas + "/" + Util.avatar + "' width='20' height='20'>";
-        this.msg += "<font color='" + Util.cor + "'> " + Util.nickname + "</font>";
-
-        if(cbModo.getSelectedItem().toString().equals("Fala")){
-            this.msg += "<b> Fala: </b>";
-            this.msg += txtMensagem.getText();
-        }else if(cbModo.getSelectedItem().toString().equals("Grita")){
-            this.msg += "<b><u> Grita: </u></b>";
-            this.msg += "<font color='tomato' size='+1'>" + txtMensagem.getText().toUpperCase() + "</font>";
-        }else if(cbModo.getSelectedItem().toString().equals("Xinga")){
-            this.msg += "<b><i><u> Xinga: </u></i></b>";
-            this.msg += "<font color='DarkRed' size='+2'>" + txtMensagem.getText().toUpperCase() + "</font>";
         }
 
-        this.msg += "<br>";
-        
+        String textoMensagem = txtMensagem.getText();
+
         String[][] carinhas = {
             {":-)", "&#128578;"},  // 🙂
             {":)",  "&#128578;"},
@@ -57,26 +41,43 @@ public class frmChat extends javax.swing.JFrame {
         };
 
         for(String[] carinha : carinhas){
-            this.msg = this.msg.replace(carinha[0], carinha[1]);
+            textoMensagem = textoMensagem.replace(carinha[0], carinha[1]);
         }
-        
+
+        this.msg = "";
+        this.msg += "<img src='" + Util.urlFigurinhas + "/" + Util.avatar + "' width='20' height='20'>";
+        this.msg += "<font color='" + Util.cor + "'> " + Util.nickname + "</font>";
+
+        if(cbModo.getSelectedItem().toString().equals("Fala")){
+            this.msg += "<b> Fala: </b>";
+            this.msg += textoMensagem;
+        }else if(cbModo.getSelectedItem().toString().equals("Grita")){
+            this.msg += "<b><u> Grita: </u></b>";
+            this.msg += "<font color='tomato' size='+1'>" + textoMensagem.toUpperCase() + "</font>";
+        }else if(cbModo.getSelectedItem().toString().equals("Xinga")){
+            this.msg += "<b><i><u> Xinga: </u></i></b>";
+            this.msg += "<font color='DarkRed' size='+2'>" + textoMensagem.toUpperCase() + "</font>";
+        }
+
+        this.msg += "<br>";
+
         try{
             Socket cliente = new Socket(Util.ipServidor, 6662);
             ObjectOutputStream output = new ObjectOutputStream(cliente.getOutputStream());
-            
+
             output.writeUTF(this.msg);
             output.close();
             cliente.close();
-            
+
             txtMensagem.setText("");
             txtMensagem.requestFocus();
-            
+
         }catch(Exception e){
             JOptionPane.showMessageDialog(null, "Erro cliente ao enviar: " +e.getMessage());
             e.printStackTrace();
         }
     }
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(frmChat.class.getName());
 
     public frmChat() {
