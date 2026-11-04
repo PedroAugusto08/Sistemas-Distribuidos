@@ -1,11 +1,10 @@
 package pacote;
 
-import java.io.BufferedReader;
-import java.io.FileWriter;
-import java.io.InputStreamReader;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import javax.swing.JOptionPane;
 
 public class DesktopRecepcaoThread implements Runnable {
@@ -30,13 +29,18 @@ public class DesktopRecepcaoThread implements Runnable {
                 cliente.close();
                 cliente = null;
 
-                FileWriter fwriter = new FileWriter(Util.PathRepDesktop, true);
-                fwriter.write(msg);
-                fwriter.write(System.lineSeparator());
-                fwriter.close();
+                try {
+                    Util.obterRepositorio().adicionarMensagem(msg);
+                } catch (IOException e) {
+                    System.err.println("Erro ao persistir mensagem recebida: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
 
         } catch (Exception e) {
+            if (!ParadaManual || !(e instanceof SocketException)) {
+                e.printStackTrace();
+            }
             if (!ParadaManual) {
                 JOptionPane.showMessageDialog(
                     null,

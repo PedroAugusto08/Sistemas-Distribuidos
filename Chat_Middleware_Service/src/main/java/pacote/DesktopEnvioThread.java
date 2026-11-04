@@ -4,9 +4,6 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,17 +67,15 @@ public class DesktopEnvioThread implements Runnable {
             int mensagensEnviadas = 0;
 
             while(!ParadaManual && !socket.isClosed()){
-                List<String> mensagens = Files.readAllLines(Path.of(Util.PathRepDesktop), StandardCharsets.UTF_8);
+                List<String> mensagens = Util.obterRepositorio().consultarMensagens(mensagensEnviadas);
 
-                if(mensagensEnviadas > mensagens.size()){
-                    mensagensEnviadas = 0;
-                }
-
-                while(!ParadaManual && !socket.isClosed() && mensagensEnviadas < mensagens.size()){
+                int indice = 0;
+                while(!ParadaManual && !socket.isClosed() && indice < mensagens.size()){
                     synchronized(output){
-                        output.writeUTF(mensagens.get(mensagensEnviadas));
+                        output.writeUTF(mensagens.get(indice));
                         output.flush();
                     }
+                    indice++;
                     mensagensEnviadas++;
                 }
 

@@ -18,6 +18,13 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
      * Creates new form FrmPainelDeControle
      */
     public FrmPainelDeControle() {
+        // Também protege a execução direta do painel pelo NetBeans.
+        try {
+            Util.inicializarRepositorio();
+        } catch (java.io.IOException e) {
+            JOptionPane.showMessageDialog(null, "Erro ao carregar histórico: " + e.getMessage());
+            throw new IllegalStateException("Não foi possível inicializar o histórico.", e);
+        }
         initComponents();
     }
 
