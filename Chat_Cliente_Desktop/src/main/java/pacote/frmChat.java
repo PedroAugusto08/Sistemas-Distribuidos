@@ -20,7 +20,7 @@ public class frmChat extends javax.swing.JFrame {
         } 
         
         this.msg = "";
-        this.msg += "<img src='" + Util.avatar + "' width='20' height='20'>";
+        this.msg += "<img src='" + Util.urlFigurinhas + "/" + Util.avatar + "' width='20' height='20'>";
         this.msg += "<font color='" + Util.cor + "'> " + Util.nickname + "</font>";
 
         if(cbModo.getSelectedItem().toString().equals("Fala")){
@@ -212,15 +212,7 @@ public class frmChat extends javax.swing.JFrame {
     }
     
     private void adicionarSticker(javax.swing.JPanel painel, String arquivo){
-        java.net.URL url = getClass().getResource("/stickers/" + arquivo);
-
-        if(url == null){
-            System.err.println("Sticker não encontrado: " + arquivo);
-            return;
-        }
-
-        javax.swing.ImageIcon imagem = new javax.swing.ImageIcon(url);
-        javax.swing.JButton botao = new javax.swing.JButton(imagem);
+        javax.swing.JButton botao = new javax.swing.JButton("Carregando...");
 
         botao.setPreferredSize(new java.awt.Dimension(140, 140));
         botao.setToolTipText(arquivo);
@@ -231,12 +223,38 @@ public class frmChat extends javax.swing.JFrame {
         });
 
         painel.add(botao);
+
+        // O seletor também busca os GIFs no servidor Web central.
+        Thread.ofVirtual().start(() -> {
+            try{
+                String endereco = Util.urlFigurinhas + "/stickers/" + arquivo;
+                java.net.URL url = java.net.URI.create(endereco).toURL();
+                javax.swing.ImageIcon imagem = new javax.swing.ImageIcon(url);
+
+                if(imagem.getIconWidth() <= 0){
+                    throw new Exception("Imagem indisponível.");
+                }
+
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    botao.setText("");
+                    botao.setIcon(imagem);
+                });
+
+            }catch(Exception e){
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    botao.setText("Indisponível");
+                    botao.setEnabled(false);
+                });
+
+                System.err.println("Erro ao carregar sticker " + arquivo + ": " + e.getMessage());
+            }
+        });
     }
     
     private void enviarSticker(String arquivo){
-        String mensagem = "<img src='" + Util.avatar + "' width='20' height='20'>";
+        String mensagem = "<img src='" + Util.urlFigurinhas + "/" + Util.avatar + "' width='20' height='20'>";
         mensagem += "<font color='" + Util.cor + "'> " + Util.nickname + "</font><br>";
-        mensagem += "<img src='stickers/" + arquivo + "' width='128' height='128'><br>";
+        mensagem += "<img src='" + Util.urlFigurinhas + "/stickers/" + arquivo + "' width='128' height='128'><br>";
 
         try(Socket cliente = new Socket(Util.ipServidor, 6662);
             ObjectOutputStream output = new ObjectOutputStream(cliente.getOutputStream())){

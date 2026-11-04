@@ -5,18 +5,14 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>JSP Page</title>
     </head>
+    
+    <%
+        String urlFigurinhas = application.getInitParameter("urlFigurinhas");
+    %>
+    
     <body>
-        <!-- <img src="images/menino.png" width="50" height="50">--> 
         
-        <%
-           /*out.print("Nickname sessão: " + session.getAttribute("nickname")+
-                    "<br> Cor sessão: " + session.getAttribute("cor")+
-                    "<br> Avatar sessão: " + session.getAttribute("avaar"));*/
-          
-            /*out.print("<img src=\"images/" + session.getAttribute("avatar") +"\" width=\"50\" + height=\"50\">");*/
-        %>
-        
-        <img src="imagens/<%=session.getAttribute("avatar")%>" width="50" height="50">
+        <img src="<%=urlFigurinhas%>/imagens/<%=session.getAttribute("avatar")%>" width="50" height="50">
         <font size="+2" color="<%=session.getAttribute("cor")%>">
             <b><%=session.getAttribute("nickname")%></b></font>
         

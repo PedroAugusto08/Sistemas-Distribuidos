@@ -4,6 +4,10 @@
     <head>
         <title>Chat Distribuído Web 1.0</title>
     </head>
+    
+    <%
+        String urlFigurinhas = application.getInitParameter("urlFigurinhas");
+    %>
 
     <body>
         <br><br><br>
@@ -38,13 +42,13 @@
                         <td align="right"><b>Avatar: </b></td>
                         <td>
                             <input type="radio" name="radAvatar" value="menino.png" checked>
-                            <img src="imagens/menino.png" width="30" height="30">
+                            <img src="<%=urlFigurinhas%>/imagens/menino.png" width="30" height="30">
                  
                             <input type="radio" name="radAvatar" value="menina.png">
-                            <img src="imagens/menina.png" width="30" height="30">
+                            <img src="<%=urlFigurinhas%>/imagens/menina.png" width="30" height="30">
 
                             <input type="radio" name="radAvatar" value="avatar.png">
-                            <img src="imagens/avatar.png" width="30" height="30">
+                            <img src="<%=urlFigurinhas%>/imagens/avatar.png" width="30" height="30">
                         </td>
                     </tr>
                     <tr>

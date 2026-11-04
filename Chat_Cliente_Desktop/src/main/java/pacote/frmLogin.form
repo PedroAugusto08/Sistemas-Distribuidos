@@ -159,9 +159,6 @@
     </Component>
     <Component class="javax.swing.JLabel" name="lblMenina">
       <Properties>
-        <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="new javax.swing.ImageIcon(getClass().getResource(&quot;/imagens/menina.png&quot;))" type="code"/>
-        </Property>
         <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
           <ComponentRef name="radMenina"/>
         </Property>
@@ -174,9 +171,6 @@
     </Component>
     <Component class="javax.swing.JLabel" name="lblMenino">
       <Properties>
-        <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="new javax.swing.ImageIcon(getClass().getResource(&quot;/imagens/menino.png&quot;))" type="code"/>
-        </Property>
         <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
           <ComponentRef name="radMenino"/>
         </Property>
@@ -235,9 +229,6 @@
     </Component>
     <Component class="javax.swing.JLabel" name="lblAzul">
       <Properties>
-        <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="new javax.swing.ImageIcon(getClass().getResource(&quot;/imagens/avatar.png&quot;))" type="code"/>
-        </Property>
         <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
           <ComponentRef name="radAvatar1"/>
         </Property>

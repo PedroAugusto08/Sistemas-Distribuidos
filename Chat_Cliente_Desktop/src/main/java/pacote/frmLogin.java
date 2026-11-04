@@ -9,6 +9,33 @@ public class frmLogin extends javax.swing.JFrame {
     public frmLogin() {
         initComponents();
         configurarSelecaoAvatares();
+        carregarAvataresRemotos();
+    }
+    
+    private void carregarAvataresRemotos(){
+        // Avatares carregados do servidor Web central, sem arquivos locais.
+        Thread.ofVirtual().start(() -> {
+            try{
+                String base = Util.urlFigurinhas + "/imagens/";
+
+                var menina = new javax.swing.ImageIcon(java.net.URI.create(base + "menina.png").toURL());
+                var menino = new javax.swing.ImageIcon(java.net.URI.create(base + "menino.png").toURL());
+                var avatar = new javax.swing.ImageIcon(java.net.URI.create(base + "avatar.png").toURL());
+
+                if(menina.getIconWidth() <= 0 || menino.getIconWidth() <= 0 || avatar.getIconWidth() <= 0){
+                    throw new Exception("Falha ao carregar os avatares.");
+                }
+
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    lblMenina.setIcon(menina);
+                    lblMenino.setIcon(menino);
+                    lblAzul.setIcon(avatar);
+                });
+
+            }catch(Exception e){
+                System.err.println("Erro ao carregar avatares do servidor: " + e.getMessage());
+            }
+        });
     }
     
     private void configurarSelecaoAvatares(){
@@ -130,12 +157,10 @@ public class frmLogin extends javax.swing.JFrame {
         getContentPane().add(lblAvatar);
         lblAvatar.setBounds(30, 240, 160, 25);
 
-        lblMenina.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagens/menina.png")));
         lblMenina.setLabelFor(radMenina);
         getContentPane().add(lblMenina);
         lblMenina.setBounds(40, 270, 40, 40);
 
-        lblMenino.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagens/menino.png")));
         lblMenino.setLabelFor(radMenino);
         getContentPane().add(lblMenino);
         lblMenino.setBounds(190, 270, 40, 40);
@@ -156,7 +181,6 @@ public class frmLogin extends javax.swing.JFrame {
         getContentPane().add(radAvatar1);
         radAvatar1.setBounds(340, 310, 20, 20);
 
-        lblAzul.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagens/avatar.png")));
         lblAzul.setLabelFor(radAvatar1);
         getContentPane().add(lblAzul);
         lblAzul.setBounds(330, 270, 40, 40);
