@@ -3,7 +3,6 @@ package pacote;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-/** As duas portas TCP iniciam juntas; falhas liberam ambas. */
 public class ServicoDesktop {
     private DesktopRecepcaoThread recepcao;
     private DesktopEnvioThread envio;
@@ -17,6 +16,7 @@ public class ServicoDesktop {
 
     public synchronized void iniciar() throws IOException {
         if (ativo) return;
+        Util.inicializarRepositorio();
         RepositorioMensagens repositorio = Util.obterRepositorio();
         Object atual = new Object();
         geracao = atual;
@@ -28,6 +28,7 @@ public class ServicoDesktop {
             threadEnvio = Thread.ofVirtual().name("desktop-envio").start(envio);
         } catch (IOException | RuntimeException e) {
             pararServidor();
+            Util.registrarErro("desktop", "inicializacao", "-", getClass().getName(), "iniciar", e);
             throw e;
         }
     }

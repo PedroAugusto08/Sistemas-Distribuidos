@@ -64,6 +64,7 @@ public class menuServidor {
                 Tray.add(Icon);
             }
         }catch(Exception e){
+            Util.registrarErro("internal", "bandeja", "-", getClass().getName(), "menuServidor", e);
             JOptionPane.showMessageDialog(null, "Erro ao criar menu do servidor de chat: " + e.getMessage());
             e.printStackTrace();
         }

@@ -14,6 +14,11 @@
         <param-value>http://127.0.0.1:8081/mensagens</param-value>
     </context-param>
 
+    <context-param>
+        <param-name>urlColetorErros</param-name>
+        <param-value>http://127.0.0.1:8082/erros/clientes</param-value>
+    </context-param>
+
     <session-config>
         <session-timeout>
             30

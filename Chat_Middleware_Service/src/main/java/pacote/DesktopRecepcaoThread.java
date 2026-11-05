@@ -41,7 +41,10 @@ public class DesktopRecepcaoThread implements Runnable {
                 }
             }
         } catch (Exception e) {
-            if (!paradaManual) aoFalhar.accept(e);
+            if (!paradaManual) {
+                Util.registrarErro("desktop", "listener-recepcao", "-", getClass().getName(), "run", e);
+                aoFalhar.accept(e);
+            }
         }
     }
 
@@ -60,14 +63,26 @@ public class DesktopRecepcaoThread implements Runnable {
                 String mensagem = input.readUTF();
                 prazo.cancel(true);
                 MensagemHtml.validar(mensagem);
-                repositorio.adicionarMensagem(mensagem);
+                persistirMensagem(cliente, mensagem);
             }
         } catch (Exception e) {
-            if (!paradaManual) System.err.println("Mensagem TCP não recebida/persistida: " + e.getClass().getSimpleName());
+            if (!paradaManual && !(e instanceof IOException) && !(e instanceof IllegalArgumentException)) {
+                Util.registrarErro("desktop", "conexao-tcp", cliente.getInetAddress().getHostAddress(),
+                        getClass().getName(), "atenderCliente", e);
+            }
         } finally {
             if (prazo != null) prazo.cancel(true);
             synchronized (clientes) { clientes.remove(cliente); }
             fechar(cliente);
+        }
+    }
+
+    private void persistirMensagem(Socket cliente, String mensagem) {
+        try { repositorio.adicionarMensagem(mensagem); }
+        catch (IOException | RuntimeException e) {
+            // Persistência é falha real mesmo se a parada foi solicitada durante a escrita.
+            Util.registrarErro("desktop", "conexao-tcp", cliente.getInetAddress().getHostAddress(),
+                    getClass().getName(), "persistirMensagem", e);
         }
     }
 

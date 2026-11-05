@@ -14,6 +14,7 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
     
     private final ServicoDesktop desktop = new ServicoDesktop(this::falhaDesktop);
     private final WebHttpService web = new WebHttpService();
+    private final ColetorErrosHttp coletor = new ColetorErrosHttp();
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FrmPainelDeControle.class.getName());
 
@@ -21,14 +22,22 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
      * Creates new form FrmPainelDeControle
      */
     public FrmPainelDeControle() {
-        // Também protege a execução direta do painel pelo NetBeans.
-        try {
-            Util.inicializarRepositorio();
-        } catch (java.io.IOException e) {
-            JOptionPane.showMessageDialog(null, "Erro ao carregar histórico: " + e.getMessage());
-            throw new IllegalStateException("Não foi possível inicializar o histórico.", e);
-        }
         initComponents();
+        // Falha/lentidão do TXT não impede usar o painel/coletor.
+        new javax.swing.SwingWorker<Void, Void>() {
+            @Override protected Void doInBackground() throws Exception {
+                Util.inicializarRepositorio();
+                return null;
+            }
+            @Override protected void done() {
+                try { get(); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                catch (java.util.concurrent.ExecutionException e) {
+                    JOptionPane.showMessageDialog(FrmPainelDeControle.this,
+                            "Histórico indisponível. O coletor pode ser ativado; tente o chat novamente após corrigir o TXT.");
+                }
+            }
+        }.execute();
     }
 
     /**
@@ -46,6 +55,9 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
         lblSrvWeb = new javax.swing.JLabel();
         lblSrvWebLegenda = new javax.swing.JLabel();
         btnAtivarWeb = new javax.swing.JToggleButton();
+        lblSrvColetor = new javax.swing.JLabel();
+        lblSrvColetorLegenda = new javax.swing.JLabel();
+        btnAtivarColetor = new javax.swing.JToggleButton();
         lblSrvTerceiros = new javax.swing.JLabel();
         lblSrvTerceirosLegenda = new javax.swing.JLabel();
         btnAtivarTerceiros = new javax.swing.JToggleButton();
@@ -74,6 +86,15 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
 
         btnAtivarWeb.setText("ATIVAR");
         btnAtivarWeb.addActionListener(this::btnAtivarWebActionPerformed);
+
+        lblSrvColetor.setFont(new java.awt.Font("Segoe UI", 0, 15)); // NOI18N
+        lblSrvColetor.setText("Coletor de erros");
+
+        lblSrvColetorLegenda.setForeground(new java.awt.Color(255, 0, 0));
+        lblSrvColetorLegenda.setText("Recepção independente de logs");
+
+        btnAtivarColetor.setText("ATIVAR");
+        btnAtivarColetor.addActionListener(this::btnAtivarColetorActionPerformed);
 
         lblSrvTerceiros.setFont(new java.awt.Font("Segoe UI", 0, 15)); // NOI18N
         lblSrvTerceiros.setText("Serviço Terceiros");
@@ -121,6 +142,12 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
                         .addComponent(btnAtivarWeb, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(lblSrvColetor)
+                            .addComponent(lblSrvColetorLegenda))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnAtivarColetor, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(lblSrvPublicidadeLegenda)
                             .addComponent(lblSrvPublicidade))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -149,6 +176,15 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
                 .addGap(26, 26, 26)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
+                        .addComponent(lblSrvColetor)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(lblSrvColetorLegenda))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addGap(4, 4, 4)
+                        .addComponent(btnAtivarColetor, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(26, 26, 26)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
                         .addComponent(lblSrvTerceiros)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(lblSrvTerceirosLegenda))
@@ -173,6 +209,34 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
     private void btnAtivarWebActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAtivarWebActionPerformed
         alterarServico(btnAtivarWeb, false);
     }//GEN-LAST:event_btnAtivarWebActionPerformed
+
+    private void btnAtivarColetorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAtivarColetorActionPerformed
+        boolean ligar = btnAtivarColetor.isSelected();
+        atualizarColetor();
+        btnAtivarColetor.setEnabled(false);
+        btnAtivarColetor.setText(ligar ? "ATIVANDO..." : "DESATIVANDO...");
+        new javax.swing.SwingWorker<Void, Void>() {
+            @Override protected Void doInBackground() throws Exception {
+                if (ligar) coletor.iniciar(); else coletor.pararServidor();
+                return null;
+            }
+            @Override protected void done() {
+                atualizarColetor();
+                btnAtivarColetor.setEnabled(true);
+                try { get(); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                catch (java.util.concurrent.ExecutionException e) {
+                    JOptionPane.showMessageDialog(FrmPainelDeControle.this,
+                            "Falha no coletor: " + e.getCause().getMessage());
+                }
+            }
+        }.execute();
+    }//GEN-LAST:event_btnAtivarColetorActionPerformed
+
+    private void atualizarColetor() {
+        btnAtivarColetor.setSelected(coletor.isAtivo());
+        btnAtivarColetor.setText(coletor.isAtivo() ? "DESATIVAR" : "ATIVAR");
+    }
 
     private void falhaDesktop(Exception erro) {
         javax.swing.SwingUtilities.invokeLater(() -> {
@@ -253,7 +317,7 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
                 }
             }
         } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
+            Util.registrarErro("internal", "painel", "-", FrmPainelDeControle.class.getName(), "main", ex);
         }
         //</editor-fold>
 
@@ -262,10 +326,13 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JToggleButton btnAtivarColetor;
     private javax.swing.JToggleButton btnAtivarDesktop;
     private javax.swing.JToggleButton btnAtivarPublicidade;
     private javax.swing.JToggleButton btnAtivarTerceiros;
     private javax.swing.JToggleButton btnAtivarWeb;
+    private javax.swing.JLabel lblSrvColetor;
+    private javax.swing.JLabel lblSrvColetorLegenda;
     private javax.swing.JLabel lblSrvDesktop;
     private javax.swing.JLabel lblSrvDesktopLegenda;
     private javax.swing.JLabel lblSrvPublicidade;

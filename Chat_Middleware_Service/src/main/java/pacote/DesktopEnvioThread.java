@@ -71,7 +71,10 @@ public class DesktopEnvioThread implements Runnable {
                 }
             }
         } catch (Exception e) {
-            if (!paradaManual) aoFalhar.accept(e);
+            if (!paradaManual) {
+                Util.registrarErro("desktop", "listener-envio", "-", getClass().getName(), "run", e);
+                aoFalhar.accept(e);
+            }
         }
     }
 
@@ -107,8 +110,9 @@ public class DesktopEnvioThread implements Runnable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (Exception e) {
-            if (!paradaManual && !cliente.socket.isClosed()) {
-                System.err.println("Conexão TCP encerrada: " + e.getClass().getSimpleName());
+            if (!paradaManual && !cliente.socket.isClosed() && !(e instanceof IOException)) {
+                Util.registrarErro("desktop", "conexao-tcp", socket.getInetAddress().getHostAddress(),
+                        getClass().getName(), "atenderCliente", e);
             }
         } finally {
             if (paradaManual) {

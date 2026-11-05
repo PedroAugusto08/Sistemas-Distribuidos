@@ -33,7 +33,7 @@ public class frmLogin extends javax.swing.JFrame {
                 });
 
             }catch(Exception e){
-                System.err.println("Erro ao carregar avatares do servidor: " + e.getMessage());
+                Util.registrarErro(getClass().getName(), "carregarAvataresRemotos", "avatares", e);
             }
         });
     }

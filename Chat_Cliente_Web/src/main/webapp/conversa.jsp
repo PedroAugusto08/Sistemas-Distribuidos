@@ -1,3 +1,4 @@
+<%@page import="com.mycompany.chat_cliente_web.RelatorErrosWeb"%>
 <%@page import="com.mycompany.chat_cliente_web.ChatWeb"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%
@@ -19,11 +20,18 @@
         <%
             try {
                 out.print(ChatWeb.consultar(application.getInitParameter("urlMiddleware")));
+                RelatorErrosWeb.padrao().recuperar("conversa.jsp", "consultarHistorico", request.getRemoteAddr());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 out.print("<b style='color:red'>Consulta interrompida.</b>");
             } catch (java.io.IOException | IllegalArgumentException e) {
+                RelatorErrosWeb.padrao().registrar(application.getInitParameter("urlColetorErros"),
+                    "conversa.jsp", "consultarHistorico", request.getRemoteAddr(), e);
                 out.print("<b style='color:red'>Serviço Web indisponível.</b>");
+            } catch (RuntimeException e) {
+                RelatorErrosWeb.padrao().registrar(application.getInitParameter("urlColetorErros"),
+                    "conversa.jsp", "consultarHistorico", request.getRemoteAddr(), e);
+                throw e;
             }
         %>
     </body>

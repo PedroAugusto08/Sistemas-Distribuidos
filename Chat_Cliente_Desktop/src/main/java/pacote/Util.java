@@ -2,6 +2,12 @@ package pacote;
 
 public class Util {
     public static String ipServidor = "localhost";
+    public static String urlColetorErros = System.getProperty("chat.logs.url", "http://localhost:8082/erros/clientes");
+
+    public static void registrarErro(String classe, String metodo, String contexto, Exception erro) {
+        RelatorErrosDesktop.padrao().registrar(urlColetorErros, classe, metodo, contexto, erro);
+    }
+
     public static String nickname = "";
     public static String cor = "";
     public static String avatar = "";

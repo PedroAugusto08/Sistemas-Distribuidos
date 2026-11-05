@@ -21,14 +21,9 @@ public class WebHttpService {
 
     public synchronized void iniciar() throws IOException {
         if (ativo) return;
+        Util.inicializarRepositorio();
         RepositorioMensagens repositorio = Util.obterRepositorio();
-        // Definidas antes da primeira criação. O provedor OpenJDK 21 interpreta
-        // maxReqTime/maxRspTime em SEGUNDOS (ServerImpl.getTimeMillis).
-        definirPadrao("sun.net.httpserver.maxReqTime", "5");
-        definirPadrao("sun.net.httpserver.maxRspTime", "5");
-        definirPadrao("jdk.httpserver.maxConnections", "128");
-        definirPadrao("sun.net.httpserver.maxReqHeaderSize", "8192");
-        definirPadrao("sun.net.httpserver.drainAmount", "0");
+        Util.configurarHttp();
         try {
             // Guarda a referência antes do bind para poder liberar inclusive falhas de porta.
             servidor = HttpServer.create();
@@ -40,12 +35,9 @@ public class WebHttpService {
             ativo = true;
         } catch (IOException | RuntimeException e) {
             pararServidor();
+            Util.registrarErro("web", "inicializacao", "-", getClass().getName(), "iniciar", e);
             throw e;
         }
-    }
-
-    private static void definirPadrao(String propriedade, String valor) {
-        if (System.getProperty(propriedade) == null) System.setProperty(propriedade, valor);
     }
 
     private void atender(HttpExchange exchange, RepositorioMensagens repositorio) {
@@ -72,7 +64,9 @@ public class WebHttpService {
             }
         } catch (IOException e) {
             // Desconexão/timeout: não repetir POST; a persistência pode já ter ocorrido.
-            System.err.println("Conexão HTTP encerrada: " + e.getClass().getSimpleName());
+        } catch (RuntimeException e) {
+            Util.registrarErro("web", "adaptador-web", exchange.getRemoteAddress().getAddress().getHostAddress(),
+                    getClass().getName(), "atender", e);
         }
     }
 
@@ -116,7 +110,8 @@ public class WebHttpService {
         try {
             repositorio.adicionarMensagem(mensagem);
         } catch (IOException e) {
-            System.err.println("Falha ao persistir mensagem HTTP: " + e.getClass().getSimpleName());
+            Util.registrarErro("web", "adaptador-web", exchange.getRemoteAddress().getAddress().getHostAddress(),
+                    getClass().getName(), "receber", e);
             responder(exchange, 500, "Não foi possível gravar a mensagem.", "text/plain");
             return;
         }

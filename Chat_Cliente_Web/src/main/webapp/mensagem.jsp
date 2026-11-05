@@ -1,3 +1,4 @@
+<%@page import="com.mycompany.chat_cliente_web.RelatorErrosWeb"%>
 <%@page import="com.mycompany.chat_cliente_web.ChatWeb"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%
@@ -13,20 +14,35 @@
     if ("POST".equals(request.getMethod()) && request.getParameter("btnEnviar") != null) {
         texto = request.getParameter("txtmsg");
         emoji = request.getParameter("cbEmoji");
+        boolean mensagemValidada = false;
         try {
             String mensagem = ChatWeb.montarMensagem(session.getAttribute("nickname"), session.getAttribute("cor"),
                     session.getAttribute("avatar"), texto, emoji);
+            mensagemValidada = true;
             ChatWeb.enviar(application.getInitParameter("urlMiddleware"), mensagem);
+            RelatorErrosWeb.padrao().recuperar("mensagem.jsp", "enviarMensagem", request.getRemoteAddr());
             // Redireciona após sucesso: atualizar o iframe não repete o POST.
             response.sendRedirect("mensagem.jsp");
             return;
         } catch (IllegalArgumentException e) {
-            erro = "Mensagem ou perfil inválido.";
+            if (mensagemValidada) {
+                RelatorErrosWeb.padrao().registrar(application.getInitParameter("urlColetorErros"),
+                        "mensagem.jsp", "enviarMensagem", request.getRemoteAddr(), e);
+                erro = "Serviço Web indisponível.";
+            } else {
+                erro = "Mensagem ou perfil inválido.";
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             erro = "Envio interrompido. A confirmação não chegou; confira a conversa antes de reenviar.";
         } catch (java.io.IOException e) {
+            RelatorErrosWeb.padrao().registrar(application.getInitParameter("urlColetorErros"),
+                    "mensagem.jsp", "enviarMensagem", request.getRemoteAddr(), e);
             erro = "Envio não confirmado. Confira a conversa antes de reenviar; o serviço pode estar indisponível.";
+        } catch (RuntimeException e) {
+            RelatorErrosWeb.padrao().registrar(application.getInitParameter("urlColetorErros"),
+                    "mensagem.jsp", "enviarMensagem", request.getRemoteAddr(), e);
+            throw e;
         }
     }
 %>

@@ -93,6 +93,7 @@ public class frmChat extends javax.swing.JFrame {
                     txtMensagem.requestFocus();
                 });
             } catch (Exception e) {
+                if (!encerrado) Util.registrarErro(getClass().getName(), "enviarMensagem", "envio", e);
                 javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
                         "Não foi possível enviar a mensagem: " + e.getClass().getSimpleName()));
             } finally {
@@ -120,6 +121,7 @@ public class frmChat extends javax.swing.JFrame {
             // Resolve as imagens do HTML usando o endereço do servidor Web.
             doc.setBase(java.net.URI.create(Util.urlFigurinhas + "/").toURL());
         }catch(Exception e){
+            Util.registrarErro(getClass().getName(), "frmChat", "configuracao-figurinhas", e);
             throw new IllegalStateException("Endereço inválido do servidor de figurinhas.", e);
         }
 
@@ -140,6 +142,7 @@ public class frmChat extends javax.swing.JFrame {
 
     private void receberMensagens() {
         boolean avisoIndisponivel = false;
+        boolean manutencao = false;
         while (!encerrado) {
             try (Socket cliente = new Socket()) {
                 conexaoRecepcao = cliente;
@@ -148,21 +151,24 @@ public class frmChat extends javax.swing.JFrame {
                 try (ObjectInputStream input = new ObjectInputStream(cliente.getInputStream())) {
                     cliente.setSoTimeout(0);
                     conectado = true;
+                    manutencao = false;
+                    RelatorErrosDesktop.padrao().recuperar(getClass().getName(), "receberMensagens", "recepcao");
                     javax.swing.SwingUtilities.invokeLater(() -> {
                         try {
                             HTMLDocument documento = (HTMLDocument) edtConversa.getDocument();
                             documento.remove(0, documento.getLength());
                             habilitarEnvio(true);
-                        } catch (Exception e) { e.printStackTrace(); }
+                        } catch (Exception e) { Util.registrarErro(getClass().getName(), "receberMensagens", "limpar-conversa", e); }
                     });
                     avisoIndisponivel = false;
                     while (!encerrado) {
                         String mensagem = input.readUTF();
                         inserirMensagem(mensagem);
-                        if (mensagem.equals(MSG_MANUTENCAO)) break;
+                        if (mensagem.equals(MSG_MANUTENCAO)) { manutencao = true; break; }
                     }
                 }
             } catch (Exception e) {
+                if (!encerrado && !manutencao) Util.registrarErro(getClass().getName(), "receberMensagens", "recepcao", e);
                 if (!encerrado && !avisoIndisponivel) {
                     inserirMensagem("<b>Servidor indisponível. Reconectando...</b><br>");
                     avisoIndisponivel = true;
@@ -190,7 +196,7 @@ public class frmChat extends javax.swing.JFrame {
                 HTMLEditorKit kit = (HTMLEditorKit) edtConversa.getEditorKit();
                 kit.insertHTML(documento, documento.getLength(), mensagem, 0, 0, null);
                 edtConversa.setCaretPosition(documento.getLength());
-            } catch (Exception e) { e.printStackTrace(); }
+            } catch (Exception e) { Util.registrarErro(getClass().getName(), "inserirMensagem", "renderizacao", e); }
         });
     }
 
@@ -278,7 +284,7 @@ public class frmChat extends javax.swing.JFrame {
                     botao.setEnabled(false);
                 });
 
-                System.err.println("Erro ao carregar sticker " + arquivo + ": " + e.getMessage());
+                Util.registrarErro(getClass().getName(), "adicionarSticker", arquivo, e);
             }
         });
     }
