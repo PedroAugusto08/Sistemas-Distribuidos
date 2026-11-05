@@ -1,17 +1,22 @@
+<%@page import="com.mycompany.chat_cliente_web.ChatWeb"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%
+    request.setCharacterEncoding("UTF-8");
     // Atualiza a sessão somente quando os dados vêm do login.
     String nickname = request.getParameter("txtNickname");
 
-    if (nickname != null && !nickname.isBlank()) {
+    if (nickname != null) {
+        if (!ChatWeb.perfilValido(nickname, request.getParameter("radCor"), request.getParameter("radAvatar"))) {
+            response.sendRedirect("index.jsp");
+            return;
+        }
         session.setAttribute("nickname", nickname);
         session.setAttribute("cor", request.getParameter("radCor"));
         session.setAttribute("avatar", request.getParameter("radAvatar"));
     }
 
     // Impede acessar o chat sem uma sessão válida.
-    if (session.getAttribute("nickname") == null
-            || session.getAttribute("avatar") == null) {
+    if (!ChatWeb.perfilValido(session.getAttribute("nickname"), session.getAttribute("cor"), session.getAttribute("avatar"))) {
         response.sendRedirect("index.jsp");
         return;
     }

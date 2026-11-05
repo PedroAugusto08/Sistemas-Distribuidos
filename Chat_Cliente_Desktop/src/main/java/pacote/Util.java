@@ -11,4 +11,8 @@ public class Util {
         "chat.figurinhas.url",
         "http://localhost:8080/figurinhas"
     );
+    public static String escaparHtml(String texto) {
+        return texto.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&#39;");
+    }
 }

@@ -9,6 +9,11 @@
         <param-value>http://200.128.142.50:8080/figurinhas</param-value>
     </context-param>
     
+    <context-param>
+        <param-name>urlMiddleware</param-name>
+        <param-value>http://127.0.0.1:8081/mensagens</param-value>
+    </context-param>
+
     <session-config>
         <session-timeout>
             30

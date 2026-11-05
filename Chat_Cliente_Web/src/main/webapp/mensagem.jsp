@@ -1,57 +1,53 @@
-<%@page import="java.io.ObjectOutputStream"%>
-<%@page import="java.net.Socket"%>
+<%@page import="com.mycompany.chat_cliente_web.ChatWeb"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-
+<%
+    request.setCharacterEncoding("UTF-8");
+    response.setHeader("Cache-Control", "no-store");
+    if (!ChatWeb.perfilValido(session.getAttribute("nickname"), session.getAttribute("cor"), session.getAttribute("avatar"))) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+    String erro = "";
+    String texto = "";
+    String emoji = "";
+    if ("POST".equals(request.getMethod()) && request.getParameter("btnEnviar") != null) {
+        texto = request.getParameter("txtmsg");
+        emoji = request.getParameter("cbEmoji");
+        try {
+            String mensagem = ChatWeb.montarMensagem(session.getAttribute("nickname"), session.getAttribute("cor"),
+                    session.getAttribute("avatar"), texto, emoji);
+            ChatWeb.enviar(application.getInitParameter("urlMiddleware"), mensagem);
+            // Redireciona após sucesso: atualizar o iframe não repete o POST.
+            response.sendRedirect("mensagem.jsp");
+            return;
+        } catch (IllegalArgumentException e) {
+            erro = "Mensagem ou perfil inválido.";
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            erro = "Envio interrompido. A confirmação não chegou; confira a conversa antes de reenviar.";
+        } catch (java.io.IOException e) {
+            erro = "Envio não confirmado. Confira a conversa antes de reenviar; o serviço pode estar indisponível.";
+        }
+    }
+%>
 <!DOCTYPE html>
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>JSP Page</title>
+        <title>Mensagem</title>
     </head>
     <body>
-        <%
-            
-            // Recursos visuais compartilhados via servidor Web, sem cópias por cliente.
-            String urlFigurinhas = application.getInitParameter("urlFigurinhas");
-            
-            if (request.getParameter("btnEnviar") != null) {
-                String msg = "";
-                msg += "<img src='/figurinhas/imagens/" + session.getAttribute("avatar") + "' width='30' height='30'>";
-
-                msg += "<font size=\"+1\" color=\"" + session.getAttribute("cor") + "\"><b>" + session.getAttribute("nickname")
-                        + "</b></font>";
-
-                msg += "Diz: " + request.getParameter("txtmsg");
-
-                String emoji = request.getParameter("cbEmoji");
-
-                if(emoji != null && !emoji.isBlank()){
-                    msg += "<img src='/figurinhas/" + emoji + "' width='30' height='30'>";
-                }
-
-                msg += "<br>";
-
-                Socket cliente = new Socket("127.0.0.1", 6662);
-                ObjectOutputStream writer = new ObjectOutputStream(cliente.getOutputStream());
-
-                writer.flush();
-                writer.writeUTF(msg);
-                writer.close();
-                cliente.close();
-            }
-
-        %>
-
+        <b style="color:red"><%=ChatWeb.html(erro)%></b>
         <form name="formMensagem" method="post" action="mensagem.jsp">
             <label for="txtmsg">Mensagem: </label>
-            <input type="text" name="txtmsg" size="200" maxlength="150">
+            <input type="text" name="txtmsg" size="200" maxlength="150" value="<%=ChatWeb.html(texto)%>">
 
             <label for="cbEmoji">Emoji:</label>
             <select name="cbEmoji" id="cbEmoji">
-                <option value="">Selecione</option>
-                <option value="emojis/coracao.gif">&#129505;</option>
-                <option value="emojis/risada.gif">&#128514;</option>
-                <option value="emojis/choro.gif">&#128557;</option>
+                <option value="" <%= "".equals(emoji) ? "selected" : "" %>>Selecione</option>
+                <option value="emojis/coracao.gif" <%= "emojis/coracao.gif".equals(emoji) ? "selected" : "" %>>&#129505;</option>
+                <option value="emojis/risada.gif" <%= "emojis/risada.gif".equals(emoji) ? "selected" : "" %>>&#128514;</option>
+                <option value="emojis/choro.gif" <%= "emojis/choro.gif".equals(emoji) ? "selected" : "" %>>&#128557;</option>
             </select>
             <input type="submit" name="btnEnviar" value="Enviar">
         </form>

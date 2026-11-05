@@ -12,6 +12,9 @@ import javax.swing.JOptionPane;
  */
 public class FrmPainelDeControle extends javax.swing.JFrame {
     
+    private final ServicoDesktop desktop = new ServicoDesktop(this::falhaDesktop);
+    private final WebHttpService web = new WebHttpService();
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FrmPainelDeControle.class.getName());
 
     /**
@@ -164,45 +167,58 @@ public class FrmPainelDeControle extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnAtivarDesktopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAtivarDesktopActionPerformed
-        if(btnAtivarDesktop.isSelected()){
-        btnAtivarDesktop.setText("DESATIVAR");
-
-        Util.desktopRecepcaoThread = new DesktopRecepcaoThread();
-        Thread.ofVirtual().start(Util.desktopRecepcaoThread);
-
-        Util.desktopEnvioThread = new DesktopEnvioThread();
-        Thread.ofVirtual().start(Util.desktopEnvioThread);
-
-    }else{
-        int resposta = JOptionPane.showConfirmDialog(null, "Deseja realmente parar os serviços para clientes DESKTOP?", "Confirmação", JOptionPane.YES_NO_OPTION);
-
-        if(resposta == JOptionPane.YES_OPTION){
-            btnAtivarDesktop.setText("ATIVAR");
-
-            if(Util.desktopRecepcaoThread != null){
-                Util.desktopRecepcaoThread.pararServidor();
-                Util.desktopRecepcaoThread = null;
-            }
-
-            if(Util.desktopEnvioThread != null){
-                Util.desktopEnvioThread.pararServidor();
-                Util.desktopEnvioThread = null;
-            }
-
-        }else{
-            btnAtivarDesktop.setSelected(true);
-            btnAtivarDesktop.setText("DESATIVAR");
-        }
-    }
+        alterarServico(btnAtivarDesktop, true);
     }//GEN-LAST:event_btnAtivarDesktopActionPerformed
 
     private void btnAtivarWebActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAtivarWebActionPerformed
-        if(btnAtivarWeb.isSelected() == true){
-            btnAtivarWeb.setText("DESATIVAR");
-        }else{
-            btnAtivarWeb.setText("ATIVAR");
-        }
+        alterarServico(btnAtivarWeb, false);
     }//GEN-LAST:event_btnAtivarWebActionPerformed
+
+    private void falhaDesktop(Exception erro) {
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            atualizarBotao(btnAtivarDesktop, true);
+            JOptionPane.showMessageDialog(this, "Serviço Desktop encerrado: " + erro.getMessage());
+        });
+    }
+
+    private void atualizarBotao(javax.swing.JToggleButton botao, boolean ehDesktop) {
+        boolean ativo = ehDesktop ? desktop.isAtivo() : web.isAtivo();
+        botao.setSelected(ativo);
+        botao.setText(ativo ? "DESATIVAR" : "ATIVAR");
+    }
+
+    private void alterarServico(javax.swing.JToggleButton botao, boolean ehDesktop) {
+        boolean ligar = botao.isSelected();
+        atualizarBotao(botao, ehDesktop);
+        if (!ligar && JOptionPane.showConfirmDialog(this,
+                "Deseja parar o serviço " + (ehDesktop ? "Desktop" : "Web") + "?",
+                "Confirmação", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
+        botao.setEnabled(false);
+        botao.setText(ligar ? "ATIVANDO..." : "DESATIVANDO...");
+        new javax.swing.SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                if (ehDesktop) {
+                    if (ligar) desktop.iniciar(); else desktop.pararServidor();
+                } else {
+                    if (ligar) web.iniciar(); else web.pararServidor();
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                atualizarBotao(botao, ehDesktop);
+                botao.setEnabled(true);
+                try { get(); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                catch (java.util.concurrent.ExecutionException e) {
+                    JOptionPane.showMessageDialog(FrmPainelDeControle.this,
+                            "Falha no serviço: " + e.getCause().getMessage());
+                }
+            }
+        }.execute();
+    }
 
     private void btnAtivarTerceirosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAtivarTerceirosActionPerformed
         if(btnAtivarTerceiros.isSelected() == true){

@@ -1,8 +1,13 @@
-<%@page import="java.io.ObjectInputStream"%>
-<%@page import="java.io.EOFException"%>
-<%@page import="java.net.Socket"%>
-<%@page import="java.net.SocketTimeoutException"%>
+<%@page import="com.mycompany.chat_cliente_web.ChatWeb"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%
+    response.setHeader("Cache-Control", "no-store");
+    response.setHeader("Content-Security-Policy", "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'self'");
+    if (!ChatWeb.perfilValido(session.getAttribute("nickname"), session.getAttribute("cor"), session.getAttribute("avatar"))) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html>
     <head>
@@ -12,23 +17,13 @@
     </head>
     <body>
         <%
-            try(Socket cliente = new Socket("127.0.0.1", 6661)){
-                cliente.setSoTimeout(1000);
-
-                try(ObjectInputStream reader = new ObjectInputStream(cliente.getInputStream())){
-                    while(true){
-                        try{
-                            String msg = reader.readUTF();
-                            out.print(msg);
-                        }catch(SocketTimeoutException | EOFException e){
-                            break;
-                        }
-                    }
-                }
-
-            }catch(Exception e){
-                out.print("<b style='color:red'>Servidor indisponível.</b>");
-                e.printStackTrace();
+            try {
+                out.print(ChatWeb.consultar(application.getInitParameter("urlMiddleware")));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                out.print("<b style='color:red'>Consulta interrompida.</b>");
+            } catch (java.io.IOException | IllegalArgumentException e) {
+                out.print("<b style='color:red'>Serviço Web indisponível.</b>");
             }
         %>
     </body>

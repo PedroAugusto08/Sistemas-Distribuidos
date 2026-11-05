@@ -10,6 +10,10 @@ import javax.swing.text.html.HTMLEditorKit;
 
 public class frmChat extends javax.swing.JFrame {
     public String msg = "";
+    private volatile boolean encerrado;
+    private volatile boolean conectado;
+    private boolean envioEmAndamento;
+    private volatile Socket conexaoRecepcao;
     private final javax.swing.JPopupMenu popupEmoji = new javax.swing.JPopupMenu();
     private static final String MSG_MANUTENCAO = "<b><font color='red'>Em manutenção...</font></b><br>";
     
@@ -18,7 +22,9 @@ public class frmChat extends javax.swing.JFrame {
             return;
         }
 
-        String textoMensagem = txtMensagem.getText();
+        String textoBase = txtMensagem.getText();
+        if (!cbModo.getSelectedItem().toString().equals("Fala")) textoBase = textoBase.toUpperCase(java.util.Locale.ROOT);
+        String textoMensagem = Util.escaparHtml(textoBase);
 
         String[][] carinhas = {
             {":-)", "&#128578;"},  // 🙂
@@ -30,14 +36,14 @@ public class frmChat extends javax.swing.JFrame {
             {"XD",  "&#128514;"},  // 😂
             {":-(", "&#128577;"},  // 🙁
             {":(",  "&#128577;"},
-            {":'(", "&#128546;"},  // 😢
+            {":&#39;(", "&#128546;"},  // 😢
             {":-P", "&#128539;"},  // 😛
             {":P",  "&#128539;"},
             {":-/", "&#128533;"},  // 😕
             {":/",  "&#128533;"},
             {":-O", "&#128558;"},  // 😮
             {":O",  "&#128558;"},
-            {"<3",  "&#10084;"}    // ❤
+            {"&lt;3",  "&#10084;"}    // ❤
         };
 
         for(String[] carinha : carinhas){
@@ -46,36 +52,57 @@ public class frmChat extends javax.swing.JFrame {
 
         this.msg = "";
         this.msg += "<img src='/figurinhas/" + Util.avatar + "' width='20' height='20'>";
-        this.msg += "<font color='" + Util.cor + "'> " + Util.nickname + "</font>";
+        this.msg += "<font color='" + Util.cor + "'> " + Util.escaparHtml(Util.nickname) + "</font>";
 
         if(cbModo.getSelectedItem().toString().equals("Fala")){
             this.msg += "<b> Fala: </b>";
             this.msg += textoMensagem;
         }else if(cbModo.getSelectedItem().toString().equals("Grita")){
             this.msg += "<b><u> Grita: </u></b>";
-            this.msg += "<font color='tomato' size='+1'>" + textoMensagem.toUpperCase() + "</font>";
+            this.msg += "<font color='tomato' size='+1'>" + textoMensagem + "</font>";
         }else if(cbModo.getSelectedItem().toString().equals("Xinga")){
             this.msg += "<b><i><u> Xinga: </u></i></b>";
-            this.msg += "<font color='DarkRed' size='+2'>" + textoMensagem.toUpperCase() + "</font>";
+            this.msg += "<font color='DarkRed' size='+2'>" + textoMensagem + "</font>";
         }
 
         this.msg += "<br>";
 
-        try{
-            Socket cliente = new Socket(Util.ipServidor, 6662);
-            ObjectOutputStream output = new ObjectOutputStream(cliente.getOutputStream());
+        enviarMensagem(this.msg, true);
+    }
 
-            output.writeUTF(this.msg);
-            output.close();
-            cliente.close();
-
-            txtMensagem.setText("");
-            txtMensagem.requestFocus();
-
-        }catch(Exception e){
-            JOptionPane.showMessageDialog(null, "Erro cliente ao enviar: " +e.getMessage());
-            e.printStackTrace();
-        }
+    private void enviarMensagem(String mensagem, boolean limparTexto) {
+        if (envioEmAndamento || !conectado || encerrado) return;
+        envioEmAndamento = true;
+        habilitarEnvio(conectado);
+        String textoOriginal = txtMensagem.getText();
+        Thread.ofVirtual().start(() -> {
+            Socket cliente = new Socket();
+            Thread prazo = Thread.ofVirtual().start(() -> {
+                try { Thread.sleep(5000); cliente.close(); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                catch (java.io.IOException e) { /* Já encerrado. */ }
+            });
+            try (cliente) {
+                cliente.connect(new java.net.InetSocketAddress(Util.ipServidor, 6662), 2000);
+                try (ObjectOutputStream output = new ObjectOutputStream(cliente.getOutputStream())) {
+                    output.writeUTF(mensagem);
+                    output.flush();
+                }
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    if (limparTexto && txtMensagem.getText().equals(textoOriginal)) txtMensagem.setText("");
+                    txtMensagem.requestFocus();
+                });
+            } catch (Exception e) {
+                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
+                        "Não foi possível enviar a mensagem: " + e.getClass().getSimpleName()));
+            } finally {
+                prazo.interrupt();
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    envioEmAndamento = false;
+                    habilitarEnvio(conectado);
+                });
+            }
+        });
     }
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(frmChat.class.getName());
@@ -86,6 +113,7 @@ public class frmChat extends javax.swing.JFrame {
         javax.swing.SwingUtilities.invokeLater(() -> txtMensagem.requestFocusInWindow());
         getRootPane().setDefaultButton(btnEnviar);
         configurarPopupEmoji();
+        habilitarEnvio(false);
 
         HTMLDocument doc = (HTMLDocument) edtConversa.getDocument();
         try{
@@ -95,79 +123,77 @@ public class frmChat extends javax.swing.JFrame {
             throw new IllegalStateException("Endereço inválido do servidor de figurinhas.", e);
         }
 
-        Thread.ofVirtual().start(() -> {
-            boolean reconectar = false;
-
-            while(true){
-                try(Socket cliente = new Socket(Util.ipServidor, 6661);
-                    ObjectInputStream input = new ObjectInputStream(cliente.getInputStream())){
-
-                    if(reconectar){
-                        javax.swing.SwingUtilities.invokeLater(() -> {
-                            try{
-                                HTMLDocument documento = (HTMLDocument) edtConversa.getDocument();
-                                documento.remove(0, documento.getLength());
-
-                                btnEnviar.setEnabled(true);
-                                txtMensagem.setEnabled(true);
-                                btnEmoji.setEnabled(true);
-                                cbModo.setEnabled(true);
-                            }catch(Exception e){
-                                e.printStackTrace();
-                            }
-                        });
-
-                        reconectar = false;
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent evento) {
+                encerrado = true;
+                Thread.ofVirtual().start(() -> {
+                    Socket socket = conexaoRecepcao;
+                    if (socket != null) {
+                        try { socket.close(); } catch (java.io.IOException e) { /* Já encerrado. */ }
                     }
-
-                    while(true){
-                        String msgs = input.readUTF();
-
-                        javax.swing.SwingUtilities.invokeLater(() -> {
-                            try{
-                                HTMLDocument documento = (HTMLDocument) edtConversa.getDocument();
-                                HTMLEditorKit kit = (HTMLEditorKit) edtConversa.getEditorKit();
-                                kit.insertHTML(documento, documento.getLength(), msgs, 0, 0, null);
-                                edtConversa.setCaretPosition(documento.getLength());
-                            }catch(Exception e){
-                                e.printStackTrace();
-                            }
-                        });
-
-                        if(msgs.equals(MSG_MANUTENCAO)){
-                            reconectar = true;
-
-                            javax.swing.SwingUtilities.invokeLater(() -> {
-                                btnEnviar.setEnabled(false);
-                                txtMensagem.setEnabled(false);
-                                btnEmoji.setEnabled(false);
-                                cbModo.setEnabled(false);
-                            });
-
-                            break;
-                        }
-                    }
-
-                }catch(Exception e){
-                    if(!reconectar){
-                        JOptionPane.showMessageDialog(null, "Erro ao receber mensagem: " + e.getClass().getSimpleName() + "\n" + e.getMessage());
-                        e.printStackTrace();
-                        break;
-                    }
-                }
-
-                if(reconectar){
-                    try{
-                        Thread.sleep(1000);
-                    }catch(InterruptedException e){
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                }
+                });
             }
         });
+        Thread.ofVirtual().start(this::receberMensagens);
     }
-    
+
+    private void receberMensagens() {
+        boolean avisoIndisponivel = false;
+        while (!encerrado) {
+            try (Socket cliente = new Socket()) {
+                conexaoRecepcao = cliente;
+                cliente.connect(new java.net.InetSocketAddress(Util.ipServidor, 6661), 2000);
+                cliente.setSoTimeout(5000);
+                try (ObjectInputStream input = new ObjectInputStream(cliente.getInputStream())) {
+                    cliente.setSoTimeout(0);
+                    conectado = true;
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        try {
+                            HTMLDocument documento = (HTMLDocument) edtConversa.getDocument();
+                            documento.remove(0, documento.getLength());
+                            habilitarEnvio(true);
+                        } catch (Exception e) { e.printStackTrace(); }
+                    });
+                    avisoIndisponivel = false;
+                    while (!encerrado) {
+                        String mensagem = input.readUTF();
+                        inserirMensagem(mensagem);
+                        if (mensagem.equals(MSG_MANUTENCAO)) break;
+                    }
+                }
+            } catch (Exception e) {
+                if (!encerrado && !avisoIndisponivel) {
+                    inserirMensagem("<b>Servidor indisponível. Reconectando...</b><br>");
+                    avisoIndisponivel = true;
+                }
+            } finally { conectado = false; conexaoRecepcao = null; }
+            if (!encerrado) {
+                javax.swing.SwingUtilities.invokeLater(() -> habilitarEnvio(false));
+                try { Thread.sleep(1000); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+            }
+        }
+    }
+
+    private void habilitarEnvio(boolean habilitado) {
+        btnEnviar.setEnabled(habilitado && !envioEmAndamento);
+        txtMensagem.setEnabled(habilitado);
+        btnEmoji.setEnabled(habilitado && !envioEmAndamento);
+        cbModo.setEnabled(habilitado);
+    }
+
+    private void inserirMensagem(String mensagem) {
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            try {
+                HTMLDocument documento = (HTMLDocument) edtConversa.getDocument();
+                HTMLEditorKit kit = (HTMLEditorKit) edtConversa.getEditorKit();
+                kit.insertHTML(documento, documento.getLength(), mensagem, 0, 0, null);
+                edtConversa.setCaretPosition(documento.getLength());
+            } catch (Exception e) { e.printStackTrace(); }
+        });
+    }
+
     private void configurarPopupEmoji(){
         javax.swing.JTabbedPane abas = new javax.swing.JTabbedPane();
 
@@ -259,20 +285,11 @@ public class frmChat extends javax.swing.JFrame {
     
     private void enviarSticker(String arquivo){
         String mensagem = "<img src='/figurinhas/" + Util.avatar + "' width='20' height='20'>";
-        mensagem += "<font color='" + Util.cor + "'> " + Util.nickname + "</font><br>";
+        mensagem += "<font color='" + Util.cor + "'> " + Util.escaparHtml(Util.nickname) + "</font><br>";
         mensagem += "<img src='/figurinhas/stickers/" + arquivo + "' width='128' height='128'><br>";
 
-        try(Socket cliente = new Socket(Util.ipServidor, 6662);
-            ObjectOutputStream output = new ObjectOutputStream(cliente.getOutputStream())){
-
-            output.writeUTF(mensagem);
-            output.flush();
-
-        }catch(Exception e){
-            JOptionPane.showMessageDialog(null, "Erro ao enviar sticker: " + e.getMessage());
-            e.printStackTrace();
-        }
-}
+        enviarMensagem(mensagem, false);
+    }
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents

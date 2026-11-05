@@ -23,6 +23,6 @@ public class Util {
         return repositorioMensagens;
     }
 
-    public static DesktopRecepcaoThread desktopRecepcaoThread;
-    public static DesktopEnvioThread desktopEnvioThread;
+    public static String EnderecoWeb = System.getProperty("chat.web.bind", "127.0.0.1");
+    public static int PortaWeb = Integer.getInteger("chat.web.port", 8081);
 }
