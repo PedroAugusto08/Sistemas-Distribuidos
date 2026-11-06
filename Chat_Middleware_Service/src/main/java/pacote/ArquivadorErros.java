@@ -89,6 +89,7 @@ public class ArquivadorErros implements AutoCloseable {
         Destino(Path arquivo, int capacidade) {
             this.arquivo = arquivo;
             fila = new ArrayBlockingQueue<>(capacidade);
+            // Uma thread dedicada por destino serializa a fila e as escritas em disco.
             escritor = Thread.ofPlatform().daemon().name("log-" + arquivo.getFileName()).start(this::executar);
         }
 

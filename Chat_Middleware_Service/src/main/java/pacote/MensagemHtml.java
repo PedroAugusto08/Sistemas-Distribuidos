@@ -22,6 +22,14 @@ public final class MensagemHtml {
         }
         for (int i = 0; i < mensagem.length(); i++) {
             char c = mensagem.charAt(i);
+            if (Character.isHighSurrogate(c)) {
+                if (i + 1 >= mensagem.length() || !Character.isLowSurrogate(mensagem.charAt(i + 1))) {
+                    throw new IllegalArgumentException("Unicode inválido.");
+                }
+                i++;
+                continue;
+            }
+            if (Character.isLowSurrogate(c)) throw new IllegalArgumentException("Unicode inválido.");
             if (Character.isISOControl(c) && c != '\n' && c != '\r' && c != '\t') {
                 throw new IllegalArgumentException("Caractere de controle inválido.");
             }

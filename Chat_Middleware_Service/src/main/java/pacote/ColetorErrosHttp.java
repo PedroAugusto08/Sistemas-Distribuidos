@@ -44,6 +44,7 @@ public final class ColetorErrosHttp {
             Util.configurarHttp();
             servidor = HttpServer.create();
             servidor.bind(new InetSocketAddress(bind, porta), 32);
+            // Atendimentos aguardam rede e confirmação do escritor; o limite de admissões permanece separado.
             tarefas = Executors.newVirtualThreadPerTaskExecutor();
             servidor.setExecutor(tarefas);
             Semaphore admissoes = new Semaphore(32); // privado desta geração

@@ -42,6 +42,11 @@ public class Util {
 
     /** Melhor esforço, sem disco no chamador e sem recursão em falhas. */
     public static void registrarErro(String servico, String cliente, String ip, String classe, String metodo, Exception erro) {
+        if (ip == null || ip.isBlank() || ip.equals("-")) {
+            ip = "NÃO APLICÁVEL";
+            cliente = cliente == null || cliente.isBlank() || cliente.equals("-")
+                    ? "INTERNO" : "INTERNO (" + cliente + ")";
+        }
         try { obterLogs().registrarMiddleware(servico, RegistroErro.de(cliente, ip, classe, metodo, erro)); }
         catch (RuntimeException e) { System.err.println("Logging indisponível (configuração)."); }
     }

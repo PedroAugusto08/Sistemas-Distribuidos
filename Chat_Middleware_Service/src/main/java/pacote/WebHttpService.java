@@ -28,6 +28,7 @@ public class WebHttpService {
             // Guarda a referência antes do bind para poder liberar inclusive falhas de porta.
             servidor = HttpServer.create();
             servidor.bind(new InetSocketAddress(Util.EnderecoWeb, Util.PortaWeb), 32);
+            // Cada requisição pode aguardar rede ou disco sem ocupar uma thread dedicada por conexão.
             tarefas = Executors.newVirtualThreadPerTaskExecutor();
             servidor.setExecutor(tarefas);
             servidor.createContext("/mensagens", exchange -> atender(exchange, repositorio));

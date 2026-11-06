@@ -24,6 +24,7 @@ public class ServicoDesktop {
             recepcao = new DesktopRecepcaoThread(Util.PortaRecepcaoDesktop, repositorio, erro -> falhou(atual, erro));
             envio = new DesktopEnvioThread(Util.PortaEnvioDesktop, repositorio, erro -> falhou(atual, erro));
             ativo = true;
+            // Listeners e conexões aguardam rede; threads virtuais reduzem o custo dessas esperas.
             threadRecepcao = Thread.ofVirtual().name("desktop-recepcao").start(recepcao);
             threadEnvio = Thread.ofVirtual().name("desktop-envio").start(envio);
         } catch (IOException | RuntimeException e) {
