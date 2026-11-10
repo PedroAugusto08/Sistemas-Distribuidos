@@ -29,6 +29,6 @@
     <body>
         <iframe src="topo.jsp" width="100%" height="100"></iframe>
         <iframe src="conversa.jsp" width="100%" height="480"></iframe>
-        <iframe src="mensagem.jsp" width="100%" height="140"></iframe>
+        <iframe src="mensagem.jsp" width="100%" height="360"></iframe>
     </body>
 </html>

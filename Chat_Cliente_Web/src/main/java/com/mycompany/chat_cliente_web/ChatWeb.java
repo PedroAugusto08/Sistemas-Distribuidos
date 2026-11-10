@@ -17,7 +17,7 @@ public final class ChatWeb {
             .followRedirects(HttpClient.Redirect.NEVER).build();
     private static final Set<String> CORES = Set.of("navy", "tomato", "black");
     private static final Set<String> AVATARES = Set.of("menino.png", "menina.png", "avatar.png");
-    private static final Set<String> EMOJIS = Set.of("", "emojis/coracao.gif", "emojis/risada.gif", "emojis/choro.gif");
+
 
     private ChatWeb() { }
 
@@ -34,17 +34,25 @@ public final class ChatWeb {
                 .replace("\"", "&quot;").replace("'", "&#39;");
     }
 
-    public static String montarMensagem(Object nickname, Object cor, Object avatar, String texto, String emoji) {
-        if (!perfilValido(nickname, cor, avatar) || texto == null || texto.length() > 150
-                || (texto.isBlank() && (emoji == null || emoji.isEmpty()))
-                || emoji == null || !EMOJIS.contains(emoji)) {
+    public static chat.catalogo.Catalogo catalogo() { return chat.catalogo.Catalogo.local(); }
+
+    public static String montarMensagem(Object nickname, Object cor, Object avatar, String texto, String id) {
+        if (!perfilValido(nickname, cor, avatar) || texto == null || texto.length() > 150 || id == null)
             throw new IllegalArgumentException("Mensagem ou perfil inválido.");
-        }
+        // Compatibilidade com chamadas Java anteriores; a UI M6 transmite IDs.
+        String recursoId = id;
+        if (id.startsWith("emojis/")) recursoId = catalogo().recursos().stream()
+                .filter(r -> r.caminho().equals(id)).map(r -> r.id()).findFirst().orElseThrow(IllegalArgumentException::new);
+        chat.catalogo.Catalogo.Recurso recurso = recursoId.isEmpty() ? null : catalogo().selecionar(recursoId);
+        if (recurso != null && recurso.unicode()) throw new IllegalArgumentException("Unicode deve estar no texto.");
+        if (texto.isBlank() && recurso == null) throw new IllegalArgumentException("Mensagem vazia.");
         String mensagem = "<img src='/figurinhas/imagens/" + avatar + "' width='30' height='30'>"
-                + "<font size=\"+1\" color=\"" + cor + "\"><b>" + html(nickname) + "</b></font>"
-                + "Diz: " + html(texto);
-        if (!emoji.isEmpty()) mensagem += "<img src='/figurinhas/" + emoji + "' width='30' height='30'>";
-        return mensagem + "<br>";
+                + "<font size=\"+1\" color=\"" + cor + "\"><b>" + html(nickname) + "</b></font>";
+        if (recurso != null && recurso.figurinha()) mensagem += "<br>" + recurso.imagemHtml();
+        else mensagem += "Diz: " + html(texto) + (recurso == null ? "" : recurso.imagemHtml());
+        mensagem += "<br>";
+        chat.catalogo.Catalogo.validarMensagem(mensagem);
+        return mensagem;
     }
 
     private static HttpRequest.Builder requisicao(String endereco) {

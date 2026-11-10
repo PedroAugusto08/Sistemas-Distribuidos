@@ -10,6 +10,15 @@ import javax.swing.text.html.HTMLEditorKit;
 
 public class frmChat extends javax.swing.JFrame {
     public String msg = "";
+    private chat.catalogo.Catalogo.Recurso imagemPendente;
+    private final javax.swing.JLabel previa = new javax.swing.JLabel("Nenhuma imagem selecionada");
+    private final javax.swing.JButton removerImagem = new javax.swing.JButton("Remover");
+    private String ultimaTentativa;
+    private final javax.swing.JLabel estadoEnvio = new javax.swing.JLabel(" ");
+    private chat.catalogo.VerificacaoPublicacao verificacaoCatalogo;
+    private javax.swing.Timer timerCatalogo;
+    private final java.util.concurrent.atomic.AtomicBoolean verificandoCatalogo = new java.util.concurrent.atomic.AtomicBoolean();
+
     private volatile boolean encerrado;
     private volatile boolean conectado;
     private boolean envioEmAndamento;
@@ -18,9 +27,14 @@ public class frmChat extends javax.swing.JFrame {
     private static final String MSG_MANUTENCAO = "<b><font color='red'>Em manutenção...</font></b><br>";
     
     public void gerarEnviarMensagem(){
-        if(txtMensagem.getText().isBlank()){
+        // Enter enquanto navega no seletor não deve acionar o botão padrão da janela.
+        if (popupEmoji.isVisible()) return;
+        if (imagemPendente != null && previa.getIcon() == null) return;
+        if (imagemPendente != null && imagemPendente.figurinha()) {
+            enviarSticker(imagemPendente);
             return;
         }
+        if (txtMensagem.getText().isBlank() && imagemPendente == null) return;
 
         String textoBase = txtMensagem.getText();
         if (!cbModo.getSelectedItem().toString().equals("Fala")) textoBase = textoBase.toUpperCase(java.util.Locale.ROOT);
@@ -65,16 +79,25 @@ public class frmChat extends javax.swing.JFrame {
             this.msg += "<font color='DarkRed' size='+2'>" + textoMensagem + "</font>";
         }
 
+        if (imagemPendente != null) this.msg += imagemPendente.imagemHtml();
         this.msg += "<br>";
 
-        enviarMensagem(this.msg, true);
+        enviarMensagem(this.msg);
     }
 
-    private void enviarMensagem(String mensagem, boolean limparTexto) {
+    private void enviarMensagem(String mensagem) {
         if (envioEmAndamento || !conectado || encerrado) return;
+        try { chat.catalogo.Catalogo.validarMensagem(mensagem); }
+        catch (IllegalArgumentException e) { JOptionPane.showMessageDialog(this, e.getMessage()); return; }
         envioEmAndamento = true;
+        if (mensagem.equals(ultimaTentativa) && JOptionPane.showConfirmDialog(this,
+                "O protocolo não confirma persistência. Confira o histórico. Deseja reenviar esta mesma composição?",
+                "Possível duplicação", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION) {
+            envioEmAndamento = false;
+            return;
+        }
+        boolean possuiImagem = imagemPendente != null;
         habilitarEnvio(conectado);
-        String textoOriginal = txtMensagem.getText();
         Thread.ofVirtual().start(() -> {
             Socket cliente = new Socket();
             Thread prazo = Thread.ofVirtual().start(() -> {
@@ -83,19 +106,23 @@ public class frmChat extends javax.swing.JFrame {
                 catch (java.io.IOException e) { /* Já encerrado. */ }
             });
             try (cliente) {
-                cliente.connect(new java.net.InetSocketAddress(Util.ipServidor, 6662), 2000);
+                if (possuiImagem) {
+                    if (verificacaoCatalogo == null) throw new java.io.IOException("Catálogo embarcado inválido.");
+                    verificacaoCatalogo.conferir();
+                }
+                // A partir da conexão, qualquer falha pode deixar o resultado incerto.
+                javax.swing.SwingUtilities.invokeAndWait(() -> ultimaTentativa = mensagem);
+                cliente.connect(new java.net.InetSocketAddress(Util.ipServidor, Integer.getInteger("chat.desktop.envio.port", 6662)), 2000);
                 try (ObjectOutputStream output = new ObjectOutputStream(cliente.getOutputStream())) {
                     output.writeUTF(mensagem);
                     output.flush();
                 }
-                javax.swing.SwingUtilities.invokeLater(() -> {
-                    if (limparTexto && txtMensagem.getText().equals(textoOriginal)) txtMensagem.setText("");
-                    txtMensagem.requestFocus();
-                });
+                javax.swing.SwingUtilities.invokeLater(() -> estadoEnvio.setText(
+                        "Transmitido ao socket; persistência não confirmada. Composição preservada."));
             } catch (Exception e) {
                 if (!encerrado) Util.registrarErro(getClass().getName(), "enviarMensagem", "envio", e);
-                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
-                        "Não foi possível enviar a mensagem: " + e.getClass().getSimpleName()));
+                if (!encerrado) javax.swing.SwingUtilities.invokeLater(() -> estadoEnvio.setText(
+                        "Falha de envio; confira o histórico antes de reenviar. Composição preservada."));
             } finally {
                 prazo.interrupt();
                 javax.swing.SwingUtilities.invokeLater(() -> {
@@ -113,6 +140,7 @@ public class frmChat extends javax.swing.JFrame {
       
         javax.swing.SwingUtilities.invokeLater(() -> txtMensagem.requestFocusInWindow());
         getRootPane().setDefaultButton(btnEnviar);
+        configurarPrevia();
         configurarPopupEmoji();
         habilitarEnvio(false);
 
@@ -129,6 +157,7 @@ public class frmChat extends javax.swing.JFrame {
             @Override
             public void windowClosed(java.awt.event.WindowEvent evento) {
                 encerrado = true;
+                if (timerCatalogo != null) timerCatalogo.stop();
                 Thread.ofVirtual().start(() -> {
                     Socket socket = conexaoRecepcao;
                     if (socket != null) {
@@ -146,7 +175,7 @@ public class frmChat extends javax.swing.JFrame {
         while (!encerrado) {
             try (Socket cliente = new Socket()) {
                 conexaoRecepcao = cliente;
-                cliente.connect(new java.net.InetSocketAddress(Util.ipServidor, 6661), 2000);
+                cliente.connect(new java.net.InetSocketAddress(Util.ipServidor, Integer.getInteger("chat.desktop.recepcao.port", 6661)), 2000);
                 cliente.setSoTimeout(5000);
                 try (ObjectInputStream input = new ObjectInputStream(cliente.getInputStream())) {
                     cliente.setSoTimeout(0);
@@ -186,7 +215,8 @@ public class frmChat extends javax.swing.JFrame {
         btnEnviar.setEnabled(habilitado && !envioEmAndamento);
         txtMensagem.setEnabled(habilitado);
         btnEmoji.setEnabled(habilitado && !envioEmAndamento);
-        cbModo.setEnabled(habilitado);
+        cbModo.setEnabled(habilitado && !envioEmAndamento);
+        removerImagem.setEnabled(!envioEmAndamento && imagemPendente != null);
     }
 
     private void inserirMensagem(String mensagem) {
@@ -200,101 +230,112 @@ public class frmChat extends javax.swing.JFrame {
         });
     }
 
-    private void configurarPopupEmoji(){
+    private void configurarPrevia() {
+        javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.BorderLayout(8, 0));
+        painel.add(previa, java.awt.BorderLayout.CENTER);
+        painel.add(removerImagem, java.awt.BorderLayout.EAST);
+        painel.add(estadoEnvio, java.awt.BorderLayout.SOUTH);
+        painel.setBounds(30, 475, 710, 140);
+        getContentPane().add(painel);
+        removerImagem.addActionListener(e -> { removerSelecao(); habilitarEnvio(conectado); });
+        setMinimumSize(new java.awt.Dimension(780, 670));
+        setSize(800, 680);
+    }
+
+    private void removerSelecao() {
+        imagemPendente = null;
+        previa.setIcon(null);
+        previa.setText("Nenhuma imagem selecionada");
+        removerImagem.setEnabled(false);
+    }
+
+    private void configurarPopupEmoji() {
+        chat.catalogo.Catalogo catalogo;
+        try { catalogo = chat.catalogo.Catalogo.local(); }
+        catch (IllegalStateException e) {
+            previa.setText("Catálogo embarcado inválido: reinstale a distribuição. Texto disponível.");
+            Util.registrarErro(getClass().getName(), "configurarPopupEmoji", "catalogo-local", e);
+            return;
+        }
+        verificacaoCatalogo = new chat.catalogo.VerificacaoPublicacao(catalogo, Util.urlFigurinhas);
         javax.swing.JTabbedPane abas = new javax.swing.JTabbedPane();
-
-        javax.swing.JPanel emojis = new javax.swing.JPanel(new java.awt.GridLayout(3, 4, 5, 5));
-
-        adicionarEmoji(emojis, "😁");
-        adicionarEmoji(emojis, "😂");
-        adicionarEmoji(emojis, "😉");
-        adicionarEmoji(emojis, "😍");
-        adicionarEmoji(emojis, "😢");
-        adicionarEmoji(emojis, "😡");
-        adicionarEmoji(emojis, "👍");
-        adicionarEmoji(emojis, "👎");
-        adicionarEmoji(emojis, "❤");
-        adicionarEmoji(emojis, "💰");
-        adicionarEmoji(emojis, "💋");
-        adicionarEmoji(emojis, "🔥");
-        adicionarEmoji(emojis, "🦉");
-        adicionarEmoji(emojis, "🤔");
-        adicionarEmoji(emojis, "🎉");
-
-        javax.swing.JPanel stickers = new javax.swing.JPanel(new java.awt.GridLayout(2, 2, 5, 5));
-
-        adicionarSticker(stickers, "baby.gif");
-        adicionarSticker(stickers, "cat.gif");
-        adicionarSticker(stickers, "JJJ.gif");
-        adicionarSticker(stickers, "sigma.gif");
-        adicionarSticker(stickers, "thinking.gif");
-        adicionarSticker(stickers, "shrek.gif");
-        adicionarSticker(stickers, "cristiano.gif");
-
-        abas.addTab("Emojis", emojis);
-        abas.addTab("Stickers", stickers);
-
+        String[] categorias = {"unicode", "emoji-gif", "figurinha-png", "figurinha-gif"};
+        String[] nomes = {"Unicode", "Emojis GIF", "Figurinhas PNG", "Figurinhas GIF"};
+        for (int i = 0; i < categorias.length; i++) {
+            javax.swing.JPanel painel = new javax.swing.JPanel(new java.awt.GridLayout(0, 4, 5, 5));
+            for (var r : catalogo.recursos()) {
+                if (!r.selecionavel() || !r.categoria().equals(categorias[i])) continue;
+                javax.swing.JButton botao = new javax.swing.JButton(r.unicode() ? r.caminho() : r.nome());
+                botao.setToolTipText(r.nome());
+                botao.addActionListener(e -> {
+                    if (envioEmAndamento) return;
+                    if (r.unicode()) {
+                        txtMensagem.replaceSelection(r.caminho());
+                        txtMensagem.requestFocusInWindow();
+                    } else selecionarImagem(r);
+                    popupEmoji.setVisible(false);
+                });
+                painel.add(botao);
+            }
+            javax.swing.JScrollPane rolagem = new javax.swing.JScrollPane(painel);
+            rolagem.setPreferredSize(new java.awt.Dimension(480, 220));
+            abas.addTab(nomes[i], rolagem);
+        }
         popupEmoji.add(abas);
+        timerCatalogo = new javax.swing.Timer(5000, e -> revalidarCatalogo());
+        timerCatalogo.start();
+        revalidarCatalogo();
     }
 
-    private void adicionarEmoji(javax.swing.JPanel painel, String emoji){
-        javax.swing.JButton botao = new javax.swing.JButton(emoji);
-
-        botao.addActionListener(e -> {
-            txtMensagem.replaceSelection(emoji);
-            txtMensagem.requestFocus();
-            popupEmoji.setVisible(false);
-        });
-
-        painel.add(botao);
-    }
-    
-    private void adicionarSticker(javax.swing.JPanel painel, String arquivo){
-        javax.swing.JButton botao = new javax.swing.JButton("Carregando...");
-
-        botao.setPreferredSize(new java.awt.Dimension(140, 140));
-        botao.setToolTipText(arquivo);
-
-        botao.addActionListener(e -> {
-            popupEmoji.setVisible(false);
-            enviarSticker(arquivo);
-        });
-
-        painel.add(botao);
-
-        // O seletor também busca os GIFs no servidor Web central.
+    private void revalidarCatalogo() {
+        if (verificacaoCatalogo == null || !verificandoCatalogo.compareAndSet(false, true)) return;
         Thread.ofVirtual().start(() -> {
-            try{
-                String endereco = Util.urlFigurinhas + "/stickers/" + arquivo;
-                java.net.URL url = java.net.URI.create(endereco).toURL();
-                javax.swing.ImageIcon imagem = new javax.swing.ImageIcon(url);
+            boolean valida;
+            try { verificacaoCatalogo.conferir(); valida = true; }
+            catch (java.io.IOException e) { valida = false; }
+            boolean resultado = valida;
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                if (!resultado) estadoEnvio.setText("Imagens bloqueadas: publicação indisponível/incompatível. Nova tentativa automática.");
+                else if (estadoEnvio.getText().startsWith("Imagens bloqueadas:")) estadoEnvio.setText("Catálogo verificado; imagens disponíveis.");
+                verificandoCatalogo.set(false);
+            });
+        });
+    }
 
-                if(imagem.getIconWidth() <= 0){
-                    throw new Exception("Imagem indisponível.");
-                }
-
+    private void selecionarImagem(chat.catalogo.Catalogo.Recurso recurso) {
+        if (verificacaoCatalogo == null || !recurso.selecionavel()) return;
+        imagemPendente = recurso;
+        previa.setIcon(null);
+        previa.setText(recurso.nome() + " — carregando prévia...");
+        removerImagem.setEnabled(true);
+        btnEnviar.setEnabled(false);
+        Thread.ofVirtual().start(() -> {
+            try {
+                verificacaoCatalogo.conferir();
+                var icone = ImagemCatalogo.carregar(recurso);
                 javax.swing.SwingUtilities.invokeLater(() -> {
-                    botao.setText("");
-                    botao.setIcon(imagem);
+                    if (imagemPendente != recurso) return;
+                    previa.setIcon(icone);
+                    previa.setText(recurso.nome() + (recurso.figurinha() ? " — envio independente; texto será preservado" : ""));
+                    habilitarEnvio(conectado);
                 });
-
-            }catch(Exception e){
+            } catch (Exception e) {
                 javax.swing.SwingUtilities.invokeLater(() -> {
-                    botao.setText("Indisponível");
-                    botao.setEnabled(false);
+                    if (imagemPendente != recurso) return;
+                    removerSelecao();
+                    previa.setText("Imagem/publicação indisponível; tente novamente em 5 segundos.");
+                    habilitarEnvio(conectado);
                 });
-
-                Util.registrarErro(getClass().getName(), "adicionarSticker", arquivo, e);
+                Util.registrarErro(getClass().getName(), "selecionarImagem", recurso.id(), e);
             }
         });
     }
-    
-    private void enviarSticker(String arquivo){
+
+    private void enviarSticker(chat.catalogo.Catalogo.Recurso recurso) {
         String mensagem = "<img src='/figurinhas/" + Util.avatar + "' width='20' height='20'>";
         mensagem += "<font color='" + Util.cor + "'> " + Util.escaparHtml(Util.nickname) + "</font><br>";
-        mensagem += "<img src='/figurinhas/stickers/" + arquivo + "' width='128' height='128'><br>";
-
-        enviarMensagem(mensagem, false);
+        mensagem += recurso.imagemHtml() + "<br>";
+        enviarMensagem(mensagem);
     }
 
     @SuppressWarnings("unchecked")
