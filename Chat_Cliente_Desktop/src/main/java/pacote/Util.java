@@ -12,6 +12,7 @@ public class Util {
     public static String cor = "";
     public static String avatar = "";
     
+    // As imagens ficam no docroot do GlassFish e são compartilhadas por URL com o Web.
     // Configurável na inicialização. O padrão atende ao servidor local.
     public static String urlFigurinhas = System.getProperty(
         "chat.figurinhas.url",

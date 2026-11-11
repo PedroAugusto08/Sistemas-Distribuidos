@@ -1,17 +1,48 @@
 # Serviços de comunicação do chat
 
-Execute `pacote.run` no NetBeans com JDK 21 ou superior. O painel também pode
-ser executado diretamente. O `exec.mainClass` antigo dos POMs Desktop/Middleware
-aponta para classes inexistentes; esta implementação não altera esses POMs.
+## Compilar e executar sem NetBeans
+
+Instale JDK 21, Maven e um servidor GlassFish compatível com Jakarta EE. Na raiz,
+mantenha `Chat_Catalogo`, `Chat_Swing` e `Recursos_Figurinhas` ao lado dos projetos:
+
+```powershell
+mvn -f Chat_Cliente_Desktop/pom.xml package
+mvn -f Chat_Middleware_Service/pom.xml package
+mvn -f Chat_Cliente_Web/pom.xml package
+```
+
+Os JARs em `target` têm Main-Class `pacote.frmLogin` e `pacote.run`. Publique
+as imagens no docroot do domínio GlassFish com o instalador versionado:
+
+```powershell
+./Recursos_Figurinhas/instalar-figurinhas.ps1 -GlassFishHome '<GlassFish>' -Dominio '<dominio>' -CatalogoJar 'Chat_Middleware_Service/target/Chat_Middleware_Service-1.0-SNAPSHOT.jar'
+```
+
+Implante `Chat_Cliente_Web/target/Chat_Cliente_Web-1.0-SNAPSHOT.war` no GlassFish
+com a ferramenta do servidor. Execute em terminais separados:
+
+```powershell
+java -jar Chat_Middleware_Service/target/Chat_Middleware_Service-1.0-SNAPSHOT.jar
+java -jar Chat_Cliente_Desktop/target/Chat_Cliente_Desktop-1.0-SNAPSHOT.jar
+```
+
+Ative Desktop, Web e coletor no painel e abra o contexto do WAR no navegador.
+Os padrões usam GlassFish em `localhost:8080`; ajuste `urlCatalogoBase` e
+`urlMiddleware` em `WEB-INF/web.xml` antes do build quando necessário. Configure
+`-Dchat.figurinhas.url` no Desktop para o mesmo servidor de imagens. O histórico
+padrão é `C:\Dados\RepositorioDesktop.txt`; para uma demonstração isolada,
+passe `-Dchat.history.path=<arquivo-temporario>` antes de `-jar` no Middleware.
+Os logs podem ser isolados com `-Dchat.logs.dir=<pasta-temporaria>`.
 
 ## Arquitetura e configuração
 
-Um único processo Middleware hospeda dois serviços independentes:
+Um único processo Middleware hospeda três serviços independentes:
 
 - Desktop: TCP 6662 recebe uma mensagem por conexão com `ObjectInputStream.readUTF()`;
   TCP 6661 transmite o histórico e as novidades com `ObjectOutputStream.writeUTF()`.
 - Web: HTTP 8081, com GET e POST em `/mensagens`. Os JSPs fazem essas chamadas
   no servidor GlassFish; o navegador continua acessando o GlassFish em 8080.
+- Coletor de erros: HTTP 8082 com controle próprio, separado dos logs internos.
 - GlassFish continua hospedando JSPs e `/figurinhas`, inclusive quando o serviço
   Web do Middleware está desligado. Encerrar o GlassFish impede novos acessos às
   imagens também no Desktop, mas não encerra os sockets TCP do Middleware.
@@ -35,7 +66,9 @@ do JDK completo; uma imagem Java reduzida precisa incluir esse módulo.
 ## Histórico compartilhado
 
 `Util.inicializarRepositorio()` cria uma única instância de `RepositorioMensagens`
-antes de disponibilizar os serviços. Alternar Desktop/Web não recria o repositório
+antes de disponibilizar Desktop/Web. O painel tenta carregar em segundo plano e
+permanece disponível se falhar; cada ativação do chat pode tentar novamente.
+O coletor não depende do repositório. Alternar Desktop/Web não recria o repositório
 nem relê o TXT. Os dois serviços recebem a mesma instância.
 
 O repositório mantém `ArrayList<String>` com operações sincronizadas. Primeiro
@@ -133,94 +166,24 @@ históricas excepcionais, não suporte a mensagens arbitrariamente grandes: não
 há fragmentação/remontagem, mudança de protocolo nem relaxamento dos limites de
 entrada. Um aviso pode reaparecer ao reconectar e reler o histórico.
 
-Os JSPs preservam sessão e iframes. Um HttpClient reutilizável usa timeout de
+Os JSPs preservam a sessão; JavaScript consulta o histórico periodicamente. Um HttpClient reutilizável usa timeout de
 conexão de 2 segundos e de requisição de 5 segundos. A conversa consulta a cada
-2 segundos. O formulário preserva o texto em falhas e redireciona após sucesso,
-evita repetir o POST ao atualizar o iframe e nunca reenvia automaticamente.
+2 segundos. O formulário preserva o texto em falhas, confirma o sucesso sem
+repetir o POST e nunca reenvia automaticamente.
 Em timeout, o POST pode ter sido persistido: conferir a conversa antes de reenviar.
 Não se introduziu deduplicação/garantia de exactly-once.
 
-## Teste automatizado sem dependências
+## Testes automatizados locais
 
-Execute os comandos PowerShell abaixo na raiz do repositório, com JDK 21+.
-Eles compilam fontes diretamente, sem Maven, não abrem telas, não acessam
-`C:\Dados\RepositorioDesktop.txt` e utilizam portas livres e TXT temporário.
-O teste imprime o caminho temporário para inspeção e preserva esse arquivo.
-
-```powershell
-$jdkChat = 'C:\Users\Pedro\AppData\Local\Programs\Eclipse Adoptium\jdk-21.0.12.8-hotspot' # ajuste para seu JDK 21
-$javacChat = Join-Path $jdkChat 'bin\javac.exe'
-$javaChat = Join-Path $jdkChat 'bin\java.exe'
-$saidaChat = 'Chat_Middleware_Service\target\verificacao-servicos'
-$fontesChat = @(Get-ChildItem 'Chat_Middleware_Service\src\main\java\pacote\*.java' | ForEach-Object FullName)
-$fontesChat += 'Chat_Cliente_Web\src\main\java\com\mycompany\chat_cliente_web\ChatWeb.java'
-$fontesChat += 'Chat_Middleware_Service\tests\ServicosIntegracaoTest.java'
-$fontesChat += 'Chat_Middleware_Service\tests\CorrecoesAuditoriaTest.java'
-& $javacChat --release 21 -encoding UTF-8 -d $saidaChat @fontesChat
-if ($LASTEXITCODE -ne 0) { throw 'Compilação dos serviços falhou' }
-& $javaChat '-Djava.awt.headless=true' -cp $saidaChat ServicosIntegracaoTest
-if ($LASTEXITCODE -ne 0) { throw 'Teste dos serviços falhou' }
-& $javaChat '-Djava.awt.headless=true' -cp $saidaChat CorrecoesAuditoriaTest
-if ($LASTEXITCODE -ne 0) { throw 'Regressões pós-auditoria falharam' }
-
-$fontesDesktop = @(Get-ChildItem 'Chat_Cliente_Desktop\src\main\java\pacote\*.java' | ForEach-Object FullName)
-& $javacChat --release 21 -encoding UTF-8 -d 'Chat_Cliente_Desktop\target\verificacao-servicos' @fontesDesktop
-if ($LASTEXITCODE -ne 0) { throw 'Compilação Desktop falhou' }
-& $javacChat --release 17 -encoding UTF-8 -d 'Chat_Cliente_Web\target\verificacao-servicos' 'Chat_Cliente_Web\src\main\java\com\mycompany\chat_cliente_web\ChatWeb.java'
-if ($LASTEXITCODE -ne 0) { throw 'Compilação do adaptador Web falhou' }
-```
-
-A suíte cobre falha de bind/rollback, HTTP inválido, limites, UTF-8, HTML,
-stickers, timeouts TCP/HTTP, cliente sem leitura, aviso de manutenção, troca
-TCP–HTTP, 40 envios simultâneos, falha/recuperação de persistência, consistência
-RAM/TXT, independência e cinco ciclos de reativação.
-
-Na correção pós-auditoria, ambas as suítes foram compiladas e executadas com
-Temurin Java 21.0.12+8 do Windows, acessado pelo WSL. Os testes direcionados
-reproduziram antes das correções: timeout do filtro adversarial, EOF no histórico
-grande e interrupção do worker nas paradas Desktop e Web.
-
-`CorrecoesAuditoriaTest` verifica 500 mil `<` com/sem `>` (até 5 segundos por caso),
-contagem de bytes comparada ao DataOutputStream, renderização Swing de `<`, `>`
-e `&`, expansão HTML acima do limite, emoji em UTF modificado, aviso e mensagens
-seguintes, histórico Web completo e preservação do TXT. Uma subclasse de teste
-pausa deterministicamente a chamada sincronizada de persistência antes da E/S
-real; a parada deve retornar dentro do limite sem interromper o worker, inclusive
-quando o serviço é reativado antes de a chamada terminar. Depois da liberação,
-confere RAM/TXT e novas gravações por TCP e HTTP. Toda persistência usa arquivos
-temporários; o teste não simula falha física de disco/energia.
-
-A validação funcional anterior Java 21/GlassFish 8 foi informada pelo usuário.
-Neste ajuste não se iniciou GlassFish nem se repetiu a demonstração visual; o
-teste de texto usa HTMLEditorKit em modo headless.
-
-Os cinco JSPs também foram traduzidos e seus servlets compilados offline com o
-parser Jakarta já incluído no NetBeans, sem instalar dependências. Para repetir
-nessa mesma instalação, após compilar `ChatWeb` acima:
-
-```powershell
-$netbeansChat = 'C:\Program Files\Apache NetBeans'
-$cpJspChat = @(
-    "$netbeansChat\enterprise\modules\ext\glassfish-jspparser-7.0.25.jar",
-    "$netbeansChat\enterprise\modules\ext\servlet-jsp-api-6.1_3.0.jar",
-    "$netbeansChat\enterprise\modules\ext\el-impl.jar",
-    "$netbeansChat\enterprise\modules\ext\logging-api-1.0.4.jar",
-    "$netbeansChat\extide\ant\lib\ant.jar"
-) -join ';'
-& $javaChat -cp $cpJspChat org.apache.jasper.JspC -uriroot 'Chat_Cliente_Web/src/main/webapp' -d 'Chat_Cliente_Web/target/verificacao-jsp' -classpath 'Chat_Cliente_Web/target/verificacao-servicos' -s mensagem.jsp conversa.jsp chat.jsp topo.jsp index.jsp
-if ($LASTEXITCODE -ne 0) { throw 'Tradução JSP falhou' }
-$fontesJspChat = @(Get-ChildItem 'Chat_Cliente_Web\target\verificacao-jsp\org\apache\jsp\*.java' | ForEach-Object FullName)
-& $javacChat --release 17 -encoding UTF-8 -cp "$cpJspChat;Chat_Cliente_Web\target\verificacao-servicos" -d 'Chat_Cliente_Web/target/verificacao-jsp' @fontesJspChat
-if ($LASTEXITCODE -ne 0) { throw 'Compilação dos servlets JSP falhou' }
-```
-
-Essa verificação valida tradução/scriptlets/imports, mas não substitui sessão,
-renderização, carregamento de imagens e funcionamento no GlassFish 8 real.
+Com JDK 21 no Windows, os scripts locais `Chat_Catalogo/tests/build-m6.ps1` e
+`Chat_Catalogo/tests/verificar-m6.ps1` constroem e testam em pastas temporárias.
+Ajuste os caminhos do JDK e Maven indicados nos scripts para sua instalação. Os
+scripts de teste são locais e não fazem parte da baseline versionada.
 
 ## Regressão manual no Windows/GlassFish
 
-1. Faça Build dos três projetos no NetBeans e publique o WAR atualizado no
-   GlassFish. Não é necessário alterar os recursos de figurinhas.
+1. Compile os três projetos e publique o WAR e as figurinhas no GlassFish
+   conforme o procedimento acima.
 2. Para demonstrar sem usar o TXT real, execute o Middleware pelo JShell:
 
    ```text
@@ -254,3 +217,10 @@ renderização, carregamento de imagens e funcionamento no GlassFish 8 real.
    as requisições continuam indo aos JSPs em 8080: o trecho 8081 é entre servidores.
 
 Não foram iniciados GlassFish nem interfaces gráficas durante a validação automatizada.
+
+## Checklist de demonstração
+
+- Com dois clientes Desktop e duas sessões Web, envie texto e imagens nos dois sentidos e confira o histórico após reconectar.
+- Desative e reative Desktop e Web separadamente; confira que o outro serviço continua operando.
+- Ative o coletor e provoque falhas controladas de cliente e serviço; confira os arquivos de log por tipo e serviço.
+- Verifique o TXT temporário, a recarga do histórico e a disponibilidade das figurinhas pelo GlassFish.
