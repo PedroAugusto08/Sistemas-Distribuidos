@@ -5,6 +5,10 @@
     response.setHeader("Cache-Control", "no-store");
     response.setHeader("Content-Security-Policy", "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'self'");
     if (!ChatWeb.perfilValido(session.getAttribute("nickname"), session.getAttribute("cor"), session.getAttribute("avatar"))) {
+        if ("1".equals(request.getParameter("fragmento"))) {
+            response.setStatus(401);
+            return;
+        }
         response.sendRedirect("index.jsp");
         return;
     }

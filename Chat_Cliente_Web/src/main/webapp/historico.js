@@ -1,6 +1,14 @@
 'use strict';
 let anterior = '', primeira = true;
 let apelidoAtual = null;
+let conexaoWeb = 'conectando', versaoConexao = 0;
+function definirConexaoWeb(estado) {
+    conexaoWeb = estado;
+    versaoConexao++;
+    document.getElementById('estado').textContent = estado === 'disponivel' ? 'Histórico atualizado'
+        : estado === 'sessao' ? 'Sessão expirada. Entre novamente.' : 'Web desconectado • reconectando...';
+    if (typeof atualizarControlesConexao === 'function') atualizarControlesConexao();
+}
 const historico = document.getElementById('historico');
 const rolagem = document.getElementById('rolagem');
 const novas = document.getElementById('novas');
@@ -60,11 +68,17 @@ function apelidoDaResposta(resposta) {
     } catch (_) { return null; }
 }
 async function atualizar() {
+    const versao = versaoConexao;
     try {
         const resposta = await fetch('conversa.jsp?fragmento=1', {cache:'no-store', redirect:'error'});
+        if (resposta.status === 401) {
+            if (versao === versaoConexao) definirConexaoWeb('sessao');
+            return;
+        }
         if (!resposta.ok) throw new Error();
         const apelido = apelidoDaResposta(resposta);
         const html = await resposta.text();
+        if (versao !== versaoConexao) return;
         const seguir = primeira || pertoDoFim(), posicao = rolagem.scrollTop;
         if (html !== anterior) {
             // Preserva os nós existentes e suas animações quando há somente acréscimo.
@@ -76,8 +90,9 @@ async function atualizar() {
         if (html !== anterior || apelido !== apelidoAtual) classificarMensagens(apelido);
         apelidoAtual = apelido;
         anterior = html; primeira = false;
-        document.getElementById('estado').textContent = 'Histórico atualizado';
-    } catch (e) { document.getElementById('estado').textContent = 'Histórico indisponível. Tentando novamente.'; }
-    setTimeout(atualizar, 2000);
+        if (versao === versaoConexao) definirConexaoWeb('disponivel');
+    } catch (e) {
+        if (versao === versaoConexao && conexaoWeb !== 'sessao') definirConexaoWeb('indisponivel');
+    } finally { setTimeout(atualizar, 2000); }
 }
 atualizar();
