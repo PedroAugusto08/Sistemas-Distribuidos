@@ -18,6 +18,7 @@ public class WebHttpService {
     private HttpServer servidor;
     private ExecutorService tarefas;
     private volatile boolean ativo;
+    private volatile int portaEfetiva;
 
     public synchronized void iniciar() throws IOException {
         if (ativo) return;
@@ -33,6 +34,7 @@ public class WebHttpService {
             servidor.setExecutor(tarefas);
             servidor.createContext("/mensagens", exchange -> atender(exchange, repositorio));
             servidor.start();
+            portaEfetiva = servidor.getAddress().getPort();
             ativo = true;
         } catch (IOException | RuntimeException e) {
             pararServidor();
@@ -142,6 +144,8 @@ public class WebHttpService {
         servidor = null;
         tarefas = null;
     }
+
+    public int portaLocal() { return ativo ? portaEfetiva : Util.PortaWeb; }
 
     public boolean isAtivo() { return ativo; }
 }

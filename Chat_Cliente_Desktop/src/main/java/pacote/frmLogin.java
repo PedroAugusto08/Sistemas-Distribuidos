@@ -1,299 +1,146 @@
 package pacote;
 
-import javax.swing.JOptionPane;
+import chat.swing.TemaSwing;
+import java.awt.*;
+import javax.swing.*;
 
-public class frmLogin extends javax.swing.JFrame {
-    
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(frmLogin.class.getName());
+public class frmLogin extends JFrame {
+    private final JTextField txtnickname = new JTextField(24);
+    private final JRadioButton radioAzul = new JRadioButton("Azul");
+    private final JRadioButton radioPreto = new JRadioButton("Preto", true);
+    private final JRadioButton radioVermelho = new JRadioButton("Vermelho");
+    private final JRadioButton radMenina = new JRadioButton("Menina");
+    private final JRadioButton radMenino = new JRadioButton("Menino", true);
+    private final JRadioButton radAvatar1 = new JRadioButton("Avatar");
+    private final JLabel[] imagensAvatar = {new JLabel("○", SwingConstants.CENTER), new JLabel("○", SwingConstants.CENTER), new JLabel("○", SwingConstants.CENTER)};
+    private final JLabel aviso = TemaSwing.apoio("Seu perfil vale para esta conversa.");
 
     public frmLogin() {
+        TemaSwing.instalar();
         initComponents();
-        configurarSelecaoAvatares();
+        SwingUtilities.updateComponentTreeUI(this);
+        setMinimumSize(new Dimension(480, 560));
+        setSize(560, 620);
+        setLocationRelativeTo(null);
         carregarAvataresRemotos();
     }
-    
-    private void carregarAvataresRemotos(){
-        // Avatares carregados do servidor Web central, sem arquivos locais.
+
+    // Conteúdo mantido em Java; o .form delega a criação a este mesmo método.
+    // Apelido como foco de entrada; avatar e cor secundários, ação ao final.
+    // Paleta, superfícies, tipografia e ritmo seguem TemaSwing (G1).
+    private JPanel criarConteudo() {
+        JPanel pagina = TemaSwing.painel(new BorderLayout(0, 24), 32);
+        JPanel topo = new JPanel(new BorderLayout());
+        topo.add(TemaSwing.apoio("CHAT / DESKTOP"), BorderLayout.WEST);
+        topo.add(TemaSwing.alternador(), BorderLayout.EAST);
+        pagina.add(topo, BorderLayout.NORTH);
+        JPanel campos = new JPanel();
+        campos.setLayout(new BoxLayout(campos, BoxLayout.Y_AXIS));
+        campos.add(TemaSwing.titulo("Entre na conversa"));
+        campos.add(Box.createVerticalStrut(8));
+        campos.add(TemaSwing.apoio("Escolha como você quer aparecer no chat."));
+        campos.add(Box.createVerticalStrut(32));
+        campos.add(new JLabel("Apelido"));
+        campos.add(Box.createVerticalStrut(8));
+        txtnickname.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        txtnickname.setPreferredSize(new Dimension(320, 44));
+        txtnickname.getAccessibleContext().setAccessibleName("Apelido");
+        campos.add(txtnickname);
+        campos.add(Box.createVerticalStrut(24));
+        campos.add(new JLabel("Cor do nome"));
+        JPanel cores = new JPanel(new GridLayout(1, 3, 8, 0));
+        ButtonGroup grupoCor = new ButtonGroup();
+        for (JRadioButton b : new JRadioButton[]{radioAzul, radioPreto, radioVermelho}) {
+            grupoCor.add(b); cores.add(b);
+        }
+        cores.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+        campos.add(cores);
+        campos.add(Box.createVerticalStrut(24));
+        campos.add(new JLabel("Avatar"));
+        JPanel avatares = new JPanel(new GridLayout(1, 3, 8, 0));
+        ButtonGroup grupoAvatar = new ButtonGroup();
+        JRadioButton[] opcoesAvatar = {radMenina, radMenino, radAvatar1};
+        for (int i = 0; i < opcoesAvatar.length; i++) {
+            JRadioButton b = opcoesAvatar[i];
+            grupoAvatar.add(b);
+            JPanel escolha = new JPanel(new BorderLayout(0, 8));
+            escolha.setBorder(BorderFactory.createEmptyBorder(8, 4, 8, 4));
+            JLabel imagem = imagensAvatar[i];
+            imagem.setLabelFor(b);
+            imagem.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            imagem.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override public void mouseClicked(java.awt.event.MouseEvent e) { b.doClick(); }
+            });
+            b.setHorizontalAlignment(SwingConstants.CENTER);
+            escolha.add(imagem, BorderLayout.CENTER);
+            escolha.add(b, BorderLayout.SOUTH);
+            avatares.add(escolha);
+        }
+        avatares.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+        campos.add(avatares);
+        campos.add(Box.createVerticalGlue());
+        for (Component c : campos.getComponents()) if (c instanceof JComponent jc) jc.setAlignmentX(0);
+        pagina.add(campos, BorderLayout.CENTER);
+        JPanel rodape = new JPanel(new BorderLayout(0, 12));
+        rodape.add(aviso, BorderLayout.NORTH);
+        JButton entrar = new JButton("Entrar na conversa  →");
+        TemaSwing.acao(entrar);
+        entrar.addActionListener(e -> entrar());
+        txtnickname.addActionListener(e -> entrar());
+        getRootPane().setDefaultButton(entrar);
+        rodape.add(entrar, BorderLayout.CENTER);
+        pagina.add(rodape, BorderLayout.SOUTH);
+        return pagina;
+    }
+
+    private void entrar() {
+        String nome = txtnickname.getText().strip();
+        if (nome.isBlank() || nome.codePoints().anyMatch(Character::isISOControl)) {
+            aviso.setText("Informe um apelido sem caracteres de controle.");
+            txtnickname.requestFocusInWindow();
+            return;
+        }
+        Util.nickname = nome;
+        Util.cor = radioAzul.isSelected() ? "#0000FF" : radioVermelho.isSelected() ? "#FF0000" : "#000000";
+        Util.avatar = radMenina.isSelected() ? "imagens/menina.png" : radMenino.isSelected() ? "imagens/menino.png" : "imagens/avatar.png";
+        new frmChat().setVisible(true);
+        dispose();
+    }
+
+    private void carregarAvataresRemotos() {
         Thread.ofVirtual().start(() -> {
-            try{
-                String base = Util.urlFigurinhas + "/imagens/";
-
-                var menina = new javax.swing.ImageIcon(java.net.URI.create(base + "menina.png").toURL());
-                var menino = new javax.swing.ImageIcon(java.net.URI.create(base + "menino.png").toURL());
-                var avatar = new javax.swing.ImageIcon(java.net.URI.create(base + "avatar.png").toURL());
-
-                if(menina.getIconWidth() <= 0 || menino.getIconWidth() <= 0 || avatar.getIconWidth() <= 0){
-                    throw new Exception("Falha ao carregar os avatares.");
+            try {
+                String[] nomes = {"menina", "menino", "avatar"};
+                for (int i = 0; i < nomes.length; i++) {
+                    var conexao = java.net.URI.create(Util.urlFigurinhas + "/imagens/" + nomes[i] + ".png").toURL().openConnection();
+                    conexao.setConnectTimeout(2000); conexao.setReadTimeout(3000);
+                    byte[] bytes;
+                    try (var in = conexao.getInputStream()) { bytes = in.readNBytes(1024 * 1024); }
+                    ImageIcon fonte = new ImageIcon(bytes);
+                    if (fonte.getIconWidth() <= 0) throw new java.io.IOException("Falha ao carregar os avatares.");
+                    double fator = 32.0 / Math.max(fonte.getIconWidth(), fonte.getIconHeight());
+                    ImageIcon icone = ImagemCatalogo.escalar(fonte.getImage(), Math.max(1, (int)(fonte.getIconWidth()*fator)), Math.max(1, (int)(fonte.getIconHeight()*fator)));
+                    JLabel imagem = imagensAvatar[i];
+                    SwingUtilities.invokeLater(() -> { imagem.setText(""); imagem.setIcon(icone); });
                 }
-
-                javax.swing.SwingUtilities.invokeLater(() -> {
-                    lblMenina.setIcon(menina);
-                    lblMenino.setIcon(menino);
-                    lblAzul.setIcon(avatar);
-                });
-
-            }catch(Exception e){
+            } catch (Exception e) {
                 Util.registrarErro(getClass().getName(), "carregarAvataresRemotos", "avatares", e);
+                SwingUtilities.invokeLater(() -> aviso.setText("Avatares indisponíveis; você ainda pode entrar."));
             }
         });
     }
-    
-    private void configurarSelecaoAvatares(){
-        lblMenina.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        lblMenino.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        lblAzul.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
-        lblMenina.addMouseListener(new java.awt.event.MouseAdapter(){
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent evt){
-                radMenina.setSelected(true);
-                atualizarBordasAvatares();
-            }
-        });
-
-        lblMenino.addMouseListener(new java.awt.event.MouseAdapter(){
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent evt){
-                radMenino.setSelected(true);
-                atualizarBordasAvatares();
-            }
-        });
-
-        lblAzul.addMouseListener(new java.awt.event.MouseAdapter(){
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent evt){
-                radAvatar1.setSelected(true);
-                atualizarBordasAvatares();
-            }
-        });
-
-        radMenina.addActionListener(e -> atualizarBordasAvatares());
-        radMenino.addActionListener(e -> atualizarBordasAvatares());
-        radAvatar1.addActionListener(e -> atualizarBordasAvatares());
-
-        atualizarBordasAvatares();
-    }
-    
-    private void atualizarBordasAvatares(){
-        javax.swing.border.Border normal = javax.swing.BorderFactory.createEmptyBorder(3, 3, 3, 3);
-        javax.swing.border.Border selecionado = javax.swing.BorderFactory.createLineBorder(new java.awt.Color(37, 99, 235), 3);
-
-        lblMenina.setBorder(radMenina.isSelected() ? selecionado : normal);
-        lblMenino.setBorder(radMenino.isSelected() ? selecionado : normal);
-        lblAzul.setBorder(radAvatar1.isSelected() ? selecionado : normal);
-    }
-
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
-
-        grpCor = new javax.swing.ButtonGroup();
-        grpAvatar = new javax.swing.ButtonGroup();
-        lblNick = new javax.swing.JLabel();
-        lblCor = new javax.swing.JLabel();
-        radioAzul = new javax.swing.JRadioButton();
-        radioPreto = new javax.swing.JRadioButton();
-        radioVermelho = new javax.swing.JRadioButton();
-        lblAvatar = new javax.swing.JLabel();
-        lblMenina = new javax.swing.JLabel();
-        lblMenino = new javax.swing.JLabel();
-        radMenina = new javax.swing.JRadioButton();
-        radMenino = new javax.swing.JRadioButton();
-        radAvatar1 = new javax.swing.JRadioButton();
-        lblAzul = new javax.swing.JLabel();
-        btnEntrar = new javax.swing.JButton();
-        lblTitulo = new javax.swing.JLabel();
-        lblSubtitulo = new javax.swing.JLabel();
-        txtnickname = new javax.swing.JTextField();
-
+    private void initComponents() {//GEN-BEGIN:initComponents
+        conteudo = criarConteudo();
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle("LOGIN");
-        setMinimumSize(new java.awt.Dimension(440, 480));
-        setName("frmLogin"); // NOI18N
-        getContentPane().setLayout(null);
-
-        lblNick.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
-        lblNick.setText("Nickname");
-        getContentPane().add(lblNick);
-        lblNick.setBounds(30, 70, 100, 30);
-
-        lblCor.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
-        lblCor.setText("Escolha sua cor");
-        getContentPane().add(lblCor);
-        lblCor.setBounds(30, 150, 140, 25);
-
-        grpCor.add(radioAzul);
-        radioAzul.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        radioAzul.setForeground(new java.awt.Color(0, 51, 255));
-        radioAzul.setText("Azul");
-        radioAzul.setMaximumSize(new java.awt.Dimension(100, 100));
-        radioAzul.setMinimumSize(new java.awt.Dimension(100, 100));
-        radioAzul.addActionListener(this::radioAzulActionPerformed);
-        getContentPane().add(radioAzul);
-        radioAzul.setBounds(40, 180, 90, 25);
-
-        grpCor.add(radioPreto);
-        radioPreto.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        radioPreto.setSelected(true);
-        radioPreto.setText("Preto");
-        radioPreto.setMaximumSize(new java.awt.Dimension(100, 100));
-        radioPreto.setMinimumSize(new java.awt.Dimension(100, 100));
-        radioPreto.addActionListener(this::radioPretoActionPerformed);
-        getContentPane().add(radioPreto);
-        radioPreto.setBounds(190, 170, 90, 50);
-
-        grpCor.add(radioVermelho);
-        radioVermelho.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        radioVermelho.setForeground(new java.awt.Color(255, 51, 51));
-        radioVermelho.setText("Vermelho");
-        radioVermelho.setMaximumSize(new java.awt.Dimension(100, 100));
-        radioVermelho.setMinimumSize(new java.awt.Dimension(100, 100));
-        radioVermelho.addActionListener(this::radioVermelhoActionPerformed);
-        getContentPane().add(radioVermelho);
-        radioVermelho.setBounds(310, 180, 103, 30);
-
-        lblAvatar.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
-        lblAvatar.setText("Escolha seu avatar");
-        getContentPane().add(lblAvatar);
-        lblAvatar.setBounds(30, 240, 160, 25);
-
-        lblMenina.setLabelFor(radMenina);
-        getContentPane().add(lblMenina);
-        lblMenina.setBounds(40, 270, 40, 40);
-
-        lblMenino.setLabelFor(radMenino);
-        getContentPane().add(lblMenino);
-        lblMenino.setBounds(190, 270, 40, 40);
-
-        grpAvatar.add(radMenina);
-        radMenina.addActionListener(this::radMeninaActionPerformed);
-        getContentPane().add(radMenina);
-        radMenina.setBounds(50, 310, 19, 20);
-
-        grpAvatar.add(radMenino);
-        radMenino.setSelected(true);
-        radMenino.addActionListener(this::radMeninoActionPerformed);
-        getContentPane().add(radMenino);
-        radMenino.setBounds(200, 310, 20, 20);
-
-        grpAvatar.add(radAvatar1);
-        radAvatar1.addActionListener(this::radAvatar1ActionPerformed);
-        getContentPane().add(radAvatar1);
-        radAvatar1.setBounds(340, 310, 20, 20);
-
-        lblAzul.setLabelFor(radAvatar1);
-        getContentPane().add(lblAzul);
-        lblAzul.setBounds(330, 270, 40, 40);
-
-        btnEntrar.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        btnEntrar.setText("Entrar no chat");
-        btnEntrar.setMaximumSize(new java.awt.Dimension(300, 100));
-        btnEntrar.setMinimumSize(new java.awt.Dimension(200, 42));
-        btnEntrar.setPreferredSize(new java.awt.Dimension(200, 42));
-        btnEntrar.addActionListener(this::btnEntrarActionPerformed);
-        getContentPane().add(btnEntrar);
-        btnEntrar.setBounds(140, 380, 140, 40);
-
-        lblTitulo.setFont(new java.awt.Font("SansSerif", 1, 20)); // NOI18N
-        lblTitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        lblTitulo.setText("Bem-vindo ao Chat");
-        getContentPane().add(lblTitulo);
-        lblTitulo.setBounds(110, 10, 220, 16);
-
-        lblSubtitulo.setFont(new java.awt.Font("SansSerif", 0, 14)); // NOI18N
-        lblSubtitulo.setForeground(new java.awt.Color(51, 51, 51));
-        lblSubtitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        lblSubtitulo.setText("Personalize seu perfil para entrar");
-        getContentPane().add(lblSubtitulo);
-        lblSubtitulo.setBounds(100, 30, 240, 19);
-
-        txtnickname.setToolTipText("Digite seu apelido...");
-        txtnickname.addActionListener(this::txtnicknameActionPerformed);
-        getContentPane().add(txtnickname);
-        txtnickname.setBounds(30, 100, 360, 22);
-
+        setTitle("Chat • Entrar");
+        getContentPane().add(conteudo, java.awt.BorderLayout.CENTER);
         pack();
-    }// </editor-fold>//GEN-END:initComponents
-
-    private void radioAzulActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radioAzulActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_radioAzulActionPerformed
-
-    private void radioPretoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radioPretoActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_radioPretoActionPerformed
-
-    private void radioVermelhoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radioVermelhoActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_radioVermelhoActionPerformed
-
-    private void radMeninaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radMeninaActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_radMeninaActionPerformed
-
-    private void radAvatar1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radAvatar1ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_radAvatar1ActionPerformed
-
-    private void btnEntrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEntrarActionPerformed
-        if(!txtnickname.getText().equals("")){
-        
-        Util.nickname = txtnickname.getText();
-        
-        if(radioAzul.isSelected()){
-            Util.cor = "#0000FF";
-        }else if(radioVermelho.isSelected()){
-            Util.cor = "#FF0000";
-        }else{
-            Util.cor = "#000000";
-        }
-        
-        if(radMenino.isSelected()){
-            Util.avatar = "imagens/menino.png";
-        }else if(radMenina.isSelected()){
-            Util.avatar = "imagens/menina.png";
-        }else if(radAvatar1.isSelected()){
-            Util.avatar = "imagens/avatar.png";
-        }
-        
-        frmChat frmchat = new frmChat();
-        frmchat.setVisible(true);
-        this.dispose();
-        }else{
-            JOptionPane.showMessageDialog(null, "Digite um nickname");
-        }
-    }//GEN-LAST:event_btnEntrarActionPerformed
-
-    private void radMeninoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_radMeninoActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_radMeninoActionPerformed
-
-    private void txtnicknameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtnicknameActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txtnicknameActionPerformed
-
-    public static void main(String args[]) {
-        java.awt.EventQueue.invokeLater(() -> new frmLogin().setVisible(true));
-    }
+    }//GEN-END:initComponents
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btnEntrar;
-    private javax.swing.ButtonGroup grpAvatar;
-    private javax.swing.ButtonGroup grpCor;
-    private javax.swing.JLabel lblAvatar;
-    private javax.swing.JLabel lblAzul;
-    private javax.swing.JLabel lblCor;
-    private javax.swing.JLabel lblMenina;
-    private javax.swing.JLabel lblMenino;
-    private javax.swing.JLabel lblNick;
-    private javax.swing.JLabel lblSubtitulo;
-    private javax.swing.JLabel lblTitulo;
-    private javax.swing.JRadioButton radAvatar1;
-    private javax.swing.JRadioButton radMenina;
-    private javax.swing.JRadioButton radMenino;
-    private javax.swing.JRadioButton radioAzul;
-    private javax.swing.JRadioButton radioPreto;
-    private javax.swing.JRadioButton radioVermelho;
-    private javax.swing.JTextField txtnickname;
+    private javax.swing.JPanel conteudo;
     // End of variables declaration//GEN-END:variables
+
+    public static void main(String[] args) { EventQueue.invokeLater(() -> new frmLogin().setVisible(true)); }
 }

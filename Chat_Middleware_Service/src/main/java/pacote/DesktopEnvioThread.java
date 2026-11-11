@@ -56,6 +56,8 @@ public class DesktopEnvioThread implements Runnable {
         emissor = new ServerSocket(porta);
     }
 
+    public int portaLocal() { return emissor.getLocalPort(); }
+
     @Override
     public void run() {
         try {

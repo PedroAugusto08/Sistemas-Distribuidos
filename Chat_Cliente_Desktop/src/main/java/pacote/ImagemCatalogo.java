@@ -7,10 +7,10 @@ import java.net.*;
 import java.util.*;
 import javax.swing.*;
 
-/** Uma imagem só é baixada após seleção. Cache limitado a quatro fontes animadas. */
+/** Carregamento fora da EDT; cache limitado aos 13 recursos visuais selecionáveis. */
 final class ImagemCatalogo {
-    private static final Map<String, ImageIcon> CACHE = new LinkedHashMap<>(4, .75f, true) {
-        protected boolean removeEldestEntry(Map.Entry<String, ImageIcon> e) { return size() > 4; }
+    private static final Map<String, ImageIcon> CACHE = new LinkedHashMap<>(13, .75f, true) {
+        protected boolean removeEldestEntry(Map.Entry<String, ImageIcon> e) { return size() > 13; }
     };
     static synchronized ImageIcon carregar(Recurso r) throws IOException {
         String chave = Util.urlFigurinhas + "/" + r.caminho();

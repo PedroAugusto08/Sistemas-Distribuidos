@@ -27,6 +27,8 @@ public class DesktopRecepcaoThread implements Runnable {
         receptor = new ServerSocket(porta);
     }
 
+    public int portaLocal() { return receptor.getLocalPort(); }
+
     @Override
     public void run() {
         try {

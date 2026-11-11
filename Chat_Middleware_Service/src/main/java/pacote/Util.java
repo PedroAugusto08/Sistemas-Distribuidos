@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 public class Util {
-    public static int PortaRecepcaoDesktop = 6662;
-    public static int PortaEnvioDesktop = 6661;
-    public static String PathRepDesktop = "C:\\Dados\\RepositorioDesktop.txt";
+    public static int PortaRecepcaoDesktop = Integer.getInteger("chat.desktop.envio.port", 6662);
+    public static int PortaEnvioDesktop = Integer.getInteger("chat.desktop.recepcao.port", 6661);
+    public static String PathRepDesktop = System.getProperty("chat.history.path", "C:\\Dados\\RepositorioDesktop.txt");
 
     private static RepositorioMensagens repositorioMensagens;
 

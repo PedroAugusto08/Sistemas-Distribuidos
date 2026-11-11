@@ -9,6 +9,8 @@ public class ServicoDesktop {
     private Thread threadRecepcao;
     private Thread threadEnvio;
     private volatile boolean ativo;
+    private volatile int portaRecepcao;
+    private volatile int portaEnvio;
     private Object geracao;
     private final Consumer<Exception> aoFalhar;
 
@@ -23,6 +25,8 @@ public class ServicoDesktop {
         try {
             recepcao = new DesktopRecepcaoThread(Util.PortaRecepcaoDesktop, repositorio, erro -> falhou(atual, erro));
             envio = new DesktopEnvioThread(Util.PortaEnvioDesktop, repositorio, erro -> falhou(atual, erro));
+            portaRecepcao = recepcao.portaLocal();
+            portaEnvio = envio.portaLocal();
             ativo = true;
             // Listeners e conexões aguardam rede; threads virtuais reduzem o custo dessas esperas.
             threadRecepcao = Thread.ofVirtual().name("desktop-recepcao").start(recepcao);
@@ -64,6 +68,9 @@ public class ServicoDesktop {
             catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
     }
+
+    public int portaRecepcao() { return ativo ? portaRecepcao : Util.PortaRecepcaoDesktop; }
+    public int portaEnvio() { return ativo ? portaEnvio : Util.PortaEnvioDesktop; }
 
     public boolean isAtivo() { return ativo; }
 }

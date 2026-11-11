@@ -19,7 +19,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId><artifactId>build-helper-maven-plugin</artifactId><version>3.6.2</version>
                 <executions><execution><id>catalogo-compartilhado</id><phase>generate-sources</phase><goals><goal>add-source</goal></goals>
-                    <configuration><sources><source>${project.basedir}/../Chat_Catalogo/src/main/java</source></sources></configuration>
+                    <configuration><sources><source>${project.basedir}/../Chat_Catalogo/src/main/java</source><source>${project.basedir}/../Chat_Swing/src/main/java</source></sources></configuration>
                 </execution></executions>
             </plugin>
             <plugin>
