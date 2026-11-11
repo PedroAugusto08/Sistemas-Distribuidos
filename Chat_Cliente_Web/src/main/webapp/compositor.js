@@ -1,62 +1,72 @@
 'use strict';
 const form = document.getElementById('compositor');
 const texto = document.getElementById('texto');
-const recurso = document.getElementById('recurso');
-const previa = document.getElementById('previa');
-const imagem = document.getElementById('imagemPrevia');
-const nome = document.getElementById('nomePrevia');
 const erro = document.getElementById('erro');
-let selecionado = null, carregando = false, enviando = false;
-let inicio = 0, fim = 0;
+const seletor = document.getElementById('seletor');
+const abrir = document.getElementById('abrir-seletor');
+const abas = Array.from(document.querySelectorAll('[role=tab]'));
+let inicio = 0, fim = 0, direcao = 'none', enviando = false;
 for (const evento of ['select', 'keyup', 'click', 'input', 'blur']) texto.addEventListener(evento, () => {
-    inicio = texto.selectionStart; fim = texto.selectionEnd;
+    inicio = texto.selectionStart; fim = texto.selectionEnd; direcao = texto.selectionDirection;
 });
-function remover() {
-    selecionado = null; recurso.value = ''; carregando = false;
-    imagem.removeAttribute('src'); imagem.hidden = true; previa.hidden = true;
-    document.querySelectorAll('.escolha').forEach(b => b.setAttribute('aria-pressed', 'false'));
+function fechar(focar) {
+    seletor.hidden = true; abrir.setAttribute('aria-expanded', 'false');
+    if (focar) { texto.focus(); texto.setSelectionRange(inicio, fim, direcao); }
 }
-document.getElementById('remover').addEventListener('click', remover);
+abrir.addEventListener('click', () => {
+    const aberto = seletor.hidden;
+    seletor.hidden = !aberto; abrir.setAttribute('aria-expanded', String(aberto));
+    if (aberto) abas.find(a => a.getAttribute('aria-selected') === 'true').focus();
+    else { texto.focus(); texto.setSelectionRange(inicio, fim, direcao); }
+});
+document.addEventListener('click', e => { if (!seletor.hidden && !e.target.closest('.seletor-area')) fechar(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !seletor.hidden) { e.preventDefault(); fechar(true); } });
+function selecionarAba(aba) {
+    for (const item of abas) {
+        const ativa = item === aba;
+        item.setAttribute('aria-selected', String(ativa)); item.tabIndex = ativa ? 0 : -1;
+        document.getElementById(item.getAttribute('aria-controls')).hidden = !ativa;
+    }
+}
+abas.forEach((aba, i) => {
+    aba.addEventListener('click', () => selecionarAba(aba));
+    aba.addEventListener('keydown', e => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+        e.preventDefault();
+        const alvo = e.key === 'Home' ? 0 : e.key === 'End' ? abas.length - 1
+            : (i + (e.key === 'ArrowRight' ? 1 : -1) + abas.length) % abas.length;
+        selecionarAba(abas[alvo]); abas[alvo].focus();
+    });
+});
+async function enviar(id) {
+    if (enviando || (!id && !texto.value.trim())) return;
+    enviando = true; erro.textContent = '';
+    const original = texto.value, posInicio = inicio, posFim = fim, posDirecao = direcao;
+    const dados = new URLSearchParams({txtmsg: id ? '' : original, recurso: id || '', catalogo: form.elements.catalogo.value});
+    const controles = Array.from(form.querySelectorAll('button'), c => [c, c.disabled]);
+    controles.forEach(([c]) => { c.disabled = true; });
+    if (id) fechar(false);
+    try {
+        const resposta = await fetch(form.action, {method: 'POST', body: dados, redirect: 'error'});
+        if (resposta.status !== 204) throw new Error(await resposta.text());
+        if (!id && texto.value === original) { texto.value = ''; inicio = fim = 0; direcao = 'none'; }
+    } catch (e) {
+        erro.textContent = e instanceof TypeError || !e.message
+            ? 'Envio não confirmado. Confira o histórico antes de reenviar.' : e.message;
+    } finally {
+        enviando = false; controles.forEach(([c, estado]) => { c.disabled = estado; });
+        if (id && texto.value === original) { inicio = posInicio; fim = posFim; direcao = posDirecao; }
+        texto.focus(); texto.setSelectionRange(inicio, fim, direcao);
+    }
+}
 document.querySelectorAll('.escolha').forEach(botao => botao.addEventListener('click', () => {
     if (enviando) return;
     const r = botao.dataset;
-    if (r.categoria === 'unicode') {
-        if (texto.value.length - (fim-inicio) + r.valor.length > texto.maxLength) {
-            erro.textContent = 'Limite de 150 caracteres atingido.'; return;
-        }
-        // https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/setRangeText
-        texto.setRangeText(r.valor, inicio, fim, 'end');
-        inicio = fim = texto.selectionEnd; texto.focus(); return;
+    if (r.categoria !== 'unicode') { enviar(r.id); return; }
+    if (texto.value.length - (fim - inicio) + r.valor.length > texto.maxLength) {
+        erro.textContent = 'Limite de 150 caracteres atingido.'; return;
     }
-    remover(); selecionado = r; recurso.value = r.id; carregando = true;
-    botao.setAttribute('aria-pressed', 'true'); previa.hidden = false;
-    nome.textContent = r.nome + (r.categoria.startsWith('figurinha-') ? ' — envio independente; rascunho preservado' : '');
-    imagem.width = Number(r.largura); imagem.height = Number(r.altura); imagem.alt = r.nome;
-    imagem.onload = () => { carregando = false; imagem.hidden = false; };
-    imagem.onerror = () => { remover(); erro.textContent = 'Imagem indisponível. Selecione novamente.'; };
-    imagem.src = '/figurinhas/' + r.valor;
+    texto.setRangeText(r.valor, inicio, fim, 'end');
+    inicio = fim = texto.selectionEnd; direcao = 'none'; erro.textContent = ''; fechar(true);
 }));
-form.addEventListener('submit', async evento => {
-    evento.preventDefault();
-    if (enviando || carregando || (!texto.value.trim() && !selecionado)) return;
-    enviando = true; erro.textContent = '';
-    const original = texto.value;
-    const figurinha = selecionado && selecionado.categoria.startsWith('figurinha-');
-    const dados = new URLSearchParams(new FormData(form));
-    const controles = Array.from(form.querySelectorAll('button,input'), c => [c, c.disabled]);
-    controles.forEach(([c]) => c.disabled = true);
-    try {
-        // Um POST por ação explícita; falhas mantêm o estado e não são repetidas.
-        // https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
-        const resposta = await fetch(form.action, {method:'POST', body:dados, redirect:'error'});
-        if (resposta.status !== 204) throw new Error(await resposta.text());
-        if (!figurinha && texto.value === original) texto.value = '';
-        remover(); inicio = fim = texto.value.length;
-    } catch (e) {
-        erro.textContent = e.message || 'Envio não confirmado. Confira o histórico antes de reenviar.';
-    } finally {
-        enviando = false;
-        controles.forEach(([c, desabilitado]) => c.disabled = desabilitado);
-        texto.focus();
-    }
-});
+form.addEventListener('submit', e => { e.preventDefault(); enviar(''); });

@@ -12,6 +12,9 @@
 <%
     if ("1".equals(request.getParameter("fragmento"))) {
         response.setContentType("text/plain; charset=UTF-8");
+        // ASCII no cabeçalho, preservando apelidos Unicode e sem interpolar JavaScript.
+        response.setHeader("X-Chat-Nickname", java.util.Base64.getEncoder().encodeToString(
+                ((String) session.getAttribute("nickname")).getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         try {
             out.print(ChatWeb.consultar(application.getInitParameter("urlMiddleware")));
             RelatorErrosWeb.padrao().recuperar("conversa.jsp", "consultarHistorico", request.getRemoteAddr());
@@ -29,6 +32,4 @@
         return;
     }
 %>
-<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Conversa</title></head>
-<body><div id="estado" role="status"></div><div id="historico"></div><script src="historico.js"></script></body></html>
+<% response.sendRedirect("chat.jsp"); %>

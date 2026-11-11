@@ -1,63 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Chat Distribuído Web 1.0</title>
-    </head>
-    
-    <%
-        String urlFigurinhas = application.getInitParameter("urlFigurinhas");
-    %>
-
-    <body>
-        <br><br><br>
-        <center>
-            <form name="frmLogin" action="chat.jsp" method="post">
-                <table border="1">
-                    <tr>
-                        <td colspan="2" bgcolor="crimson" align="center">
-                            <font color="white" size="+2">Chat Distribuído 1.0</font>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="right"><b>Nickname:</b></td>
-                        <td>
-                            <input type="text" name="txtNickname" maxlength="20" size="40">
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="right"><b>Cor:</b></td>
-                        <td>
-                            <input type="radio" name="radCor" value="navy" checked>
-                            <font color="navy"><b>Azul</b></font>
-                            
-                            <input type="radio" name="radCor" value="tomato">
-                            <font color="tomato"><b>Vermelho</b></font>
-            
-                            <input type="radio" name="radCor" value="black">
-                            <font color="black"><b>Preto</b></font>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="right"><b>Avatar: </b></td>
-                        <td>
-                            <input type="radio" name="radAvatar" value="menino.png" checked>
-                            <img src="/figurinhas/imagens/menino.png" width="30" height="30">
-                 
-                            <input type="radio" name="radAvatar" value="menina.png">
-                            <img src="/figurinhas/imagens/menina.png" width="30" height="30">
-
-                            <input type="radio" name="radAvatar" value="avatar.png">
-                            <img src="/figurinhas/imagens/avatar.png" width="30" height="30">
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" align="center">
-                            <input type="submit" name="btnEntrar" value="Entrar"> 
-                        </td>
-                    </tr>
-                </table>
-            </form>
-        </center>
-    </body>
-</html>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Entrar · Chat Distribuído</title><link rel="stylesheet" href="chat.css"><script defer src="tema.js"></script></head>
+<body class="login-page"><main class="entrada"><header class="entrada-topo"><span class="marca" aria-hidden="true">◌</span><span>CHAT DISTRIBUÍDO</span><button class="tema" type="button" aria-label="Alternar tema" title="Alternar tema">◐</button></header><div class="entrada-conteudo"><p class="eyebrow">UMA SALA, MUITAS CONVERSAS</p><h1>Entre na conversa.</h1><p class="descricao">Escolha como você quer aparecer para as outras pessoas na sala.</p>
+<form name="frmLogin" action="chat.jsp" method="post" class="login-form"><label for="nickname">Seu apelido</label><input id="nickname" type="text" name="txtNickname" maxlength="20" required autocomplete="nickname" placeholder="Como podemos chamar você?">
+<fieldset><legend>Cor do nome</legend><div class="opcoes cores"><label><input type="radio" name="radCor" value="navy" checked><span>Azul</span></label><label><input type="radio" name="radCor" value="tomato"><span>Vermelho</span></label><label><input type="radio" name="radCor" value="black"><span>Preto</span></label></div></fieldset>
+<fieldset><legend>Seu avatar</legend><div class="opcoes avatares"><label><input type="radio" name="radAvatar" value="menino.png" checked><span><img src="/figurinhas/imagens/menino.png" alt="">Menino</span></label><label><input type="radio" name="radAvatar" value="menina.png"><span><img src="/figurinhas/imagens/menina.png" alt="">Menina</span></label><label><input type="radio" name="radAvatar" value="avatar.png"><span><img src="/figurinhas/imagens/avatar.png" alt="">Avatar</span></label></div></fieldset>
+<button class="entrar" type="submit">Entrar na sala <span aria-hidden="true">→</span></button></form></div></main></body></html>
