@@ -1,62 +1,93 @@
-
 package br.edu.cefetmg.jdbcmysql;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.ResultSet;
-import javax.swing.JOptionPane;
+import java.sql.*;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 
-public class JDBCMySQL {
-    public static void main(String[] args) throws SQLException {
-        // Entrada de dados
-        String nome = JOptionPane.showInputDialog("Digite o nome:");
-        String telefone = JOptionPane.showInputDialog("Digite o telefone:");
+public class JDBCMySQL extends JFrame {
 
-        // Conecta ao servidor de banco de dados
-        Connection conexao = DriverManager.getConnection("jdbc:mysql://10.112.75.143:3307/teste", "root", "root");
+    JTextField campoNome = new JTextField(20);
+    JTextField campoTelefone = new JTextField(20);
+    JButton botaoAdicionar = new JButton("Adicionar");
+    DefaultTableModel modelo = new DefaultTableModel(new String[]{"ID", "Nome", "Telefone"}, 0);
+    JTable tabela = new JTable(modelo);
 
-        // Executa comando SQL
-        if (nome != null && telefone != null && !nome.isBlank() && !telefone.isBlank()) {
-            PreparedStatement stm = conexao.prepareStatement("INSERT INTO clientes(nome, telefone) VALUES (?, ?)");
-            stm.setString(1, nome);
-            stm.setString(2, telefone);
-            stm.executeUpdate();
-            stm.close();
+    public JDBCMySQL() {
+        setTitle("Cadastro de clientes");
+        setSize(500, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        // Painel principal
+        JPanel principal = new JPanel(new BorderLayout(0, 10));
+        principal.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        // Formulário
+        JPanel painel = new JPanel(new GridLayout(3, 2, 10, 10));
+        painel.add(new JLabel("Nome:"));
+        painel.add(campoNome);
+        painel.add(new JLabel("Telefone:"));
+        painel.add(campoTelefone);
+        painel.add(new JLabel(""));
+        painel.add(botaoAdicionar);
+
+        // Tabela
+        tabela.setRowHeight(24);
+        tabela.setFillsViewportHeight(true);
+        tabela.setDefaultEditor(Object.class, null);
+        tabela.getColumnModel().getColumn(0).setMaxWidth(60);
+
+        principal.add(painel, BorderLayout.NORTH);
+        principal.add(new JScrollPane(tabela), BorderLayout.CENTER);
+        setContentPane(principal);
+
+        botaoAdicionar.addActionListener(e -> adicionarCliente());
+        listarClientes();
+    }
+
+    // Conecta ao servidor MySQL
+    public Connection conectar() throws SQLException {
+        return DriverManager.getConnection("jdbc:mysql://10.210.215.143:3306/teste", "root", "root");
+    }
+
+    // Adiciona um cliente
+    public void adicionarCliente() {
+        String nome = campoNome.getText();
+        String telefone = campoTelefone.getText();
+
+        if (nome.isBlank() || telefone.isBlank()) {
+            JOptionPane.showMessageDialog(this, "Preencha todos os campos.");
+            return;
         }
 
-        // Mostra todos os clientes antes da exclusão
-        PreparedStatement pstm = conexao.prepareStatement("SELECT nome, telefone FROM clientes");
-        ResultSet rs = pstm.executeQuery();
-        System.out.println("=== CLIENTES ===");
-        while (rs.next()) {
-            System.out.println("Nome: " + rs.getString("nome"));
-            System.out.println("Telefone: " + rs.getString("telefone"));
-        }
-        rs.close();
-        pstm.close();
+        try (Connection conexao = conectar(); PreparedStatement pstm = conexao.prepareStatement("INSERT INTO clientes(nome, telefone) VALUES (?, ?)")) {
+            pstm.setString(1, nome);
+            pstm.setString(2, telefone);
+            pstm.executeUpdate();
 
-        // Exclui cliente pelo nome
-        String nomeExcluir = JOptionPane.showInputDialog("Digite o nome que deseja excluir:");
-        if (nomeExcluir != null && !nomeExcluir.isBlank()) {
-            PreparedStatement excluir = conexao.prepareStatement("DELETE FROM clientes WHERE nome = ?");
-            excluir.setString(1, nomeExcluir);
-            System.out.println("\nExcluidos: " + excluir.executeUpdate());
-            excluir.close();
+            campoNome.setText("");
+            campoTelefone.setText("");
+            listarClientes();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage());
         }
+    }
 
-        // Mostra todos os clientes depois da exclusão
-        pstm = conexao.prepareStatement("SELECT nome, telefone FROM clientes");
-        rs = pstm.executeQuery();
-        System.out.println("\n=== CLIENTES DEPOIS DA EXCLUSÃO ===");
-        while (rs.next()) {
-            System.out.println("Nome: " + rs.getString("nome"));
-            System.out.println("Telefone: " + rs.getString("telefone"));
+    // Lista todos os clientes na tabela
+    public void listarClientes() {
+        try (Connection conexao = conectar(); PreparedStatement pstm = conexao.prepareStatement("SELECT id, nome, telefone FROM clientes ORDER BY id"); ResultSet rs = pstm.executeQuery()) {
+            modelo.setRowCount(0);
+
+            while (rs.next()) {
+                modelo.addRow(new Object[]{rs.getInt("id"), rs.getString("nome"), rs.getString("telefone")});
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage());
         }
+    }
 
-        rs.close();
-        pstm.close();
-        conexao.close();
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new JDBCMySQL().setVisible(true));
     }
 }
