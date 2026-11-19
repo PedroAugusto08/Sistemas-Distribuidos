@@ -6,13 +6,15 @@ import java.nio.file.Path;
 public class Util {
     public static int PortaRecepcaoDesktop = Integer.getInteger("chat.desktop.envio.port", 6662);
     public static int PortaEnvioDesktop = Integer.getInteger("chat.desktop.recepcao.port", 6661);
-    public static String PathRepDesktop = System.getProperty("chat.history.path", "C:\\Dados\\RepositorioDesktop.txt");
 
     private static RepositorioMensagens repositorioMensagens;
 
     public static synchronized void inicializarRepositorio() throws IOException {
         if (repositorioMensagens == null) {
-            try { repositorioMensagens = new RepositorioMensagens(Path.of(PathRepDesktop)); }
+            try {
+                repositorioMensagens = new RepositorioMensagensMySQL(
+                        System.getenv("CHAT_DB_URL"), System.getenv("CHAT_DB_USER"), System.getenv("CHAT_DB_PASSWORD"));
+            }
             catch (IOException | RuntimeException e) {
                 registrarErro("internal", "inicializacao", "-", Util.class.getName(), "inicializarRepositorio", e);
                 throw e;

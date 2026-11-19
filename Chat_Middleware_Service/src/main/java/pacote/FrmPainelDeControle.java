@@ -22,14 +22,14 @@ public class FrmPainelDeControle extends JFrame {
         setMinimumSize(new Dimension(640, 480));
         setSize(720, 540);
         setLocationRelativeTo(null);
-        // Falha/lentidão do TXT não impede usar o painel/coletor.
+        // Falha/lentidão do MySQL não impede usar o painel/coletor.
         new SwingWorker<Void, Void>() {
             @Override protected Void doInBackground() throws Exception { Util.inicializarRepositorio(); return null; }
             @Override protected void done() {
                 try { get(); }
                 catch (InterruptedException e) { Thread.currentThread().interrupt(); }
                 catch (java.util.concurrent.ExecutionException e) {
-                    aviso.setText("Histórico indisponível. Corrija o TXT para ativar o chat; coletor disponível.");
+                    aviso.setText("Histórico indisponível. Verifique o MySQL; coletor disponível.");
                 }
             }
         }.execute();

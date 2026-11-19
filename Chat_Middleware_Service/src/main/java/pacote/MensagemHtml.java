@@ -112,7 +112,7 @@ public final class MensagemHtml {
         return bytes;
     }
 
-    /** Filtra também históricos antigos, sem reescrever o TXT nem a RAM. */
+    /** Filtra também o histórico, sem reescrever o banco nem a RAM. */
     public static String paraExibicao(String mensagem) {
         StringBuilder resultado = new StringBuilder(mensagem.length());
         Matcher tag = TAG.matcher(mensagem);

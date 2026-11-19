@@ -13,6 +13,7 @@ import pacote.*;
 /** Regressões pós-auditoria. Somente arquivos temporários e portas efêmeras. */
 public class CorrecoesAuditoriaTest {
     public static void main(String[] args) throws Exception {
+        System.setProperty("chat.logs.dir", Files.createTempDirectory("chat-regressao-logs-").toString());
         String caso = args.length == 0 ? "todos" : args[0];
         if (caso.equals("todos") || caso.equals("html")) testarFiltro();
         if (caso.equals("todos") || caso.equals("historico")) testarHistoricoGrande();
@@ -59,7 +60,7 @@ public class CorrecoesAuditoriaTest {
         String normal = ChatWeb.montarMensagem("Web", "navy", "menino.png", "a < b > c & d 😀", "emojis/coracao.gif");
         String original = "antes<br>\n" + expansao + "\n" + utfModificado + "\n" + normal + "\n";
         Files.writeString(arquivo, original, StandardCharsets.UTF_8);
-        RepositorioMensagens repositorio = new RepositorioMensagens(arquivo);
+        RepositorioMensagens repositorio = new RepositorioMensagensArquivo(arquivo);
         instalarRepositorio(repositorio);
         configurarPortas();
         ServicoDesktop desktop = new ServicoDesktop(erro -> { throw new AssertionError(erro); });
@@ -154,7 +155,7 @@ public class CorrecoesAuditoriaTest {
     }
 
     /** Pausa determinística dentro da chamada sincronizada, antes da E/S real. */
-    private static class RepositorioPausado extends RepositorioMensagens {
+    private static class RepositorioPausado extends RepositorioMensagensArquivo {
         final CountDownLatch entrou = new CountDownLatch(1);
         final CountDownLatch liberar = new CountDownLatch(1);
         final CountDownLatch terminou = new CountDownLatch(1);

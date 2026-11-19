@@ -16,10 +16,11 @@ public class ServicosIntegracaoTest {
     private static String endpoint;
 
     public static void main(String[] args) throws Exception {
+        System.setProperty("chat.logs.dir", Files.createTempDirectory("chat-regressao-logs-").toString());
         Path pasta = Files.createTempDirectory("chat-servicos-teste-");
         Path arquivo = pasta.resolve("historico.txt");
         Files.writeString(arquivo, "<b>Antiga</b><br>\n<script>alert(1)</script>\n", StandardCharsets.UTF_8);
-        Util.PathRepDesktop = arquivo.toString();
+        RepositorioMensagensArquivo.instalar(arquivo);
         Util.inicializarRepositorio();
         RepositorioMensagens repositorio = Util.obterRepositorio();
         Util.PortaRecepcaoDesktop = portaLivre();
@@ -91,7 +92,15 @@ public class ServicosIntegracaoTest {
         verificar(mensagem.contains("&lt;script&gt;") && mensagem.contains("&lt;img onerror=1&gt;"), "Não escapou texto");
         MensagemHtml.validar(mensagem);
         for (String nome : List.of("baby", "cat", "JJJ", "sigma", "thinking", "shrek", "cristiano")) {
-            MensagemHtml.validar("<img src='/figurinhas/stickers/" + nome + ".gif' width='128' height='128'><br>");
+            String legado = "<img src='/figurinhas/stickers/" + nome + ".gif' width='128' height='128'><br>";
+            verificar(MensagemHtml.paraExibicao(legado).equals(legado), "Perdeu dimensão legada");
+            var recurso = chat.catalogo.Catalogo.local().recursos().stream()
+                    .filter(r -> r.caminho().equals("stickers/" + nome + ".gif")).findFirst().orElseThrow();
+            MensagemHtml.validar(recurso.imagemHtml() + "<br>");
+            if (recurso.larguraExibicao() != 128 || recurso.alturaExibicao() != 128) {
+                try { MensagemHtml.validar(legado); throw new AssertionError("Aceitou dimensão legada em novo envio"); }
+                catch (IllegalArgumentException esperado) { }
+            }
         }
         MensagemHtml.validar("<font color='#0000FF'>Nick</font><b><u> Grita: </u></b><font color='tomato' size='+1'>😀 &lt;3</font><br>");
         verificar(!ChatWeb.perfilValido("nick", "red' onmouseover='x", "menino.png"), "Aceitou atributo livre");

@@ -102,7 +102,7 @@ public class DesktopEnvioThread implements Runnable {
                         System.err.println("Mensagem histórica no índice " + indice + " possui " + bytes
                                 + " bytes em UTF modificado após filtragem; enviado aviso ao Desktop.");
                         exibicao = "<b>Esta mensagem excede o limite de exibição do Desktop (65535 bytes). "
-                                + "O conteúdo original permanece no histórico Web e no TXT.</b><br>";
+                                + "O conteúdo original permanece no histórico Web e no banco.</b><br>";
                     }
                     cliente.enviar(exibicao);
                     indice++;

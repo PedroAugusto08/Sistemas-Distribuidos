@@ -93,7 +93,7 @@ public class DesktopRecepcaoThread implements Runnable {
             paradaManual = true;
             try { receptor.close(); } catch (IOException e) { /* Já encerrado. */ }
             clientes.forEach(DesktopRecepcaoThread::fechar);
-            // Fechar sockets encerra leituras; não interromper FileChannel/rollback.
+            // Fechar sockets encerra leituras; deixar a persistência terminar.
             tarefas.shutdown();
         }
         try {
