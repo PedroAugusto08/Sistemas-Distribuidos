@@ -202,21 +202,8 @@ Não se introduziu deduplicação/garantia de exactly-once.
 Com JDK 21 no Windows, os scripts locais `Chat_Catalogo/tests/build-m6.ps1` e
 `Chat_Catalogo/tests/verificar-m6.ps1` constroem e testam em pastas temporárias.
 Ajuste os caminhos do JDK e Maven indicados nos scripts para sua instalação. Os
-scripts de teste são locais e não fazem parte da baseline versionada. As suítes
-de transporte usam `tests/RepositorioMensagensArquivo.java` exclusivamente como
-fixture de teste, nunca no JAR de produção. Para validar a persistência real,
-prepare um banco separado `chat_teste` com a mesma tabela do `banco.sql`, configure
-em um terminal separado `CHAT_DB_URL`, `CHAT_DB_USER` e `CHAT_DB_PASSWORD` para
-esse banco de teste e execute:
-
-```powershell
-$pastaTeste = New-Item -ItemType Directory -Path (Join-Path $env:TEMP ('chat-teste-' + [guid]::NewGuid()))
-javac -encoding UTF-8 -cp 'Chat_Middleware_Service/target/Chat_Middleware_Service-1.0-SNAPSHOT.jar' -d $pastaTeste.FullName Chat_Middleware_Service/tests/MySQLIntegracaoTest.java
-java -cp "$($pastaTeste.FullName);Chat_Middleware_Service/target/Chat_Middleware_Service-1.0-SNAPSHOT.jar" MySQLIntegracaoTest
-```
-
-O teste verifica falha SQL, Unicode, concorrência, comunicação TCP/HTTP e recarga. Insere mensagens identificadas
-por UUID no banco de teste e não apaga registros.
+scripts e adaptações de teste para MySQL são mantidos localmente e não fazem
+parte da entrega versionada. Os testes históricos em Git referem-se à versão com TXT.
 
 ## Regressão manual no Windows/GlassFish
 
